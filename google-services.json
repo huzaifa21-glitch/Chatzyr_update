@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "954263953328",
+    "project_id": "chatzyr-15d55",
+    "storage_bucket": "chatzyr-15d55.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954263953328:android:e73b9e8028d28fd3094075",
+        "android_client_info": {
+          "package_name": "com.spotflux90.chatzyeAppUpdate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhJMQQfnRx26e9N13KZ9R9izqMhKWV8wQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
