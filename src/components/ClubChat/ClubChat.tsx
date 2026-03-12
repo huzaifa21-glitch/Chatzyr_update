@@ -32,19 +32,20 @@ interface ClubChatProps {
 }
 
 // ─── Tag Config ──────────────────────────────────────────────────────────────
-const TAG_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  admin:  { label: "Admin",   color: "#fff", bg: "#D32F2F" },
-  mod1:   { label: "Mod I",   color: "#fff", bg: "#1565C0" },
-  mod2:   { label: "Mod II",  color: "#fff", bg: "#6A1B9A" },
-  member: { label: "Member",  color: "#888", bg: "#e8e8e8" },
-};
+const TAG_CONFIG: Record<string, { label: string; color: string; bg: string }> =
+  {
+    admin: { label: "Admin", color: "#fff", bg: "#D32F2F" },
+    mod1: { label: "Mod I", color: "#fff", bg: "#1565C0" },
+    mod2: { label: "Mod II", color: "#fff", bg: "#6A1B9A" },
+    member: { label: "Member", color: "#888", bg: "#e8e8e8" },
+  };
 
 const USER_COLORS: Record<string, string> = {
-  John:    "#E65100",
+  John: "#E65100",
   Athalia: "#C2185B",
-  Sofia:   "#1565C0",
-  Alex:    "#2E7D32",
-  You:     "#D32F2F",
+  Sofia: "#1565C0",
+  Alex: "#2E7D32",
+  You: "#D32F2F",
 };
 const getNameColor = (name: string) => USER_COLORS[name] ?? "#555";
 
@@ -121,7 +122,7 @@ const INITIAL_MESSAGES: Message[] = [
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function ClubChat({ clubId , navigation}: ClubChatProps) {
+export default function ClubChat({ clubId, navigation }: ClubChatProps) {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef<FlatList>(null);
@@ -135,14 +136,17 @@ export default function ClubChat({ clubId , navigation}: ClubChatProps) {
       user: "You",
       text,
       avatar: "https://i.pravatar.cc/150?img=12",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       tag: "member",
       badgeEmoji: "🌱",
     };
 
     setMessages((prev) => [...prev, newMsg]);
     setInputText("");
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
   };
 
   const handleReport = (id: string) => {
@@ -165,23 +169,29 @@ export default function ClubChat({ clubId , navigation}: ClubChatProps) {
     const tagCfg = TAG_CONFIG[item.tag ?? "member"];
 
     return (
-      <View  style={styles.messageRow}>
-      {/* <Loader overlay visible={true} message="Please wait..." /> */}
+      <View style={styles.messageRow}>
+        {/* <Loader overlay visible={true} message="Please wait..." /> */}
         {/* Avatar + Badge */}
-        <TouchableOpacity onPress={() => navigation?.navigate("UserProfile", { user: item.user })}>
-        <View style={styles.avatarWrapper}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
-          <View style={styles.badge}>
-            <Text style={styles.badgeEmoji}>{item.badgeEmoji}</Text>
+        <TouchableOpacity
+          onPress={() =>
+            navigation?.navigate("UserProfile", { user: item.user })
+          }
+        >
+          <View style={styles.avatarWrapper}>
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <View style={styles.badge}>
+              <Text style={styles.badgeEmoji}>{item.badgeEmoji}</Text>
+            </View>
           </View>
-        </View>
         </TouchableOpacity>
 
         {/* Content */}
         <View style={styles.messageContent}>
           {/* Name + Tag + Time */}
           <View style={styles.nameRow}>
-            <Text style={[styles.userName, { color: getNameColor(item.user!) }]}>
+            <Text
+              style={[styles.userName, { color: getNameColor(item.user!) }]}
+            >
               {item.user}
             </Text>
             <View style={[styles.tagPill, { backgroundColor: tagCfg.bg }]}>
@@ -211,7 +221,7 @@ export default function ClubChat({ clubId , navigation}: ClubChatProps) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <FlatList
@@ -224,8 +234,15 @@ export default function ClubChat({ clubId , navigation}: ClubChatProps) {
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({ animated: false })
         }
+        // onLayout={
+        //   () => flatListRef.current?.scrollToEnd({ animated: false }) // ← ADD this
+        // }
+        // maintainVisibleContentPosition={{
+        //   // ← ADD this
+        //   minIndexForVisible: 0,
+        // }}
       />
-
+ 
       <InputBar
         inputText={inputText}
         setInputText={setInputText}

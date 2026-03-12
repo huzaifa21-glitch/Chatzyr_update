@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#efeff2"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -25,17 +27,23 @@
       [
         "expo-font",
         {
-          "PoppinsBold": ["./src/Fonts/PoppinsBold.ttf"]
+          "PoppinsBold": [
+            "./src/Fonts/PoppinsBold.ttf"
+          ]
         }
-      ]
+      ],
+      "expo-video",
+      "expo-web-browser"
     ],
     "android": {
-      "googleServicesFile":"./google-services.json",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["android.permission.RECORD_AUDIO"],
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "package": "com.spotflux90.chatzyeAppUpdate",
       "versionCode": 14
     },

@@ -1,0 +1,71 @@
+[
+  {
+    "_id": "6542ae189c93ac9c1afdfbb2",
+    "id": "1",
+    "title": "GOLD",
+    "image": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/gold.jpg",
+    "type": "vip2",
+    "packages": [
+      { "_id": "6542ae189c93ac9c1afdfbb3", "options": "Colors Profile username" },
+      { "_id": "6542ae189c93ac9c1afdfbb4", "options": "Color Text Username" },
+      { "_id": "6542ae189c93ac9c1afdfbb5", "options": "Color Chat Text" },
+      { "_id": "6542ae189c93ac9c1afdfbb6", "options": "VIP Badge" }
+    ],
+    "Price": [
+      { "_id": "6542ae189c93ac9c1afdfbb7", "duration": "1 Month", "price": "1400" },
+      { "_id": "6542ae189c93ac9c1afdfbb8", "duration": "3 Months", "price": "4000" },
+      { "_id": "6542ae189c93ac9c1afdfbb9", "duration": "6 Months", "price": "7000" },
+      { "_id": "6542ae189c93ac9c1afdfbba", "duration": "1 Year", "price": "14000" }
+    ],
+    "__v": 0
+  },
+  {
+    "_id": "654fd89a3ad727b75a7957b3",
+    "id": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/WhatsApp_Image_2024-07-15_at_1.42.44_PM-removebg-preview.png",
+    "title": "RED HEEL - Classic",
+    "image": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/Picsart_24-01-11_01-14-13-352-removebg-preview.png",
+    "type": "badge",
+    "packages": [
+      { "_id": "6542ae189c93ac9c1afdfbb6", "options": "NEW BEST COLOR" }
+    ],
+    "Price": [
+      { "_id": "6542ae189c93ac9c1afdfbb7", "duration": "1 Month", "price": "8" }
+    ],
+    "__v": 0
+  },
+  {
+    "_id": "6542ae67f4f30116a81ee082",
+    "id": "2",
+    "title": "PLATINUM",
+    "image": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/plat.jpg",
+    "type": "vip3",
+    "packages": [
+      { "_id": "6542ae67f4f30116a81ee083", "options": "Colors Profile username" },
+      { "_id": "6542ae67f4f30116a81ee084", "options": "Color Text Username" },
+      { "_id": "6542ae67f4f30116a81ee085", "options": "Color Chat Text" },
+      { "_id": "6542ae67f4f30116a81ee086", "options": "VIP Badge" },
+      { "_id": "6542ae67f4f30116a81ee087", "options": "Personal Video Room" }
+    ],
+    "Price": [
+      { "_id": "6542ae67f4f30116a81ee088", "duration": "1 Month", "price": "2850" },
+      { "_id": "6542ae67f4f30116a81ee089", "duration": "3 Months", "price": "5400" },
+      { "_id": "6542ae67f4f30116a81ee08a", "duration": "6 Months", "price": "15500" },
+      { "_id": "6542ae67f4f30116a81ee08b", "duration": "1 Year", "price": "31000" }
+    ],
+    "__v": 0
+  },
+  {
+    "_id": "654fce42f0f19376372aeb41",
+    "id": "#FFCC5C",
+    "title": "PREMIMUM COLOR",
+    "image": "https://www.colorcombos.com/images/colors/FFCC5C.png",
+    "type": "chatcolor",
+    "packages": [
+      { "_id": "6542ae189c93ac9c1afdfbb6", "options": "NEW BEST COLOR" }
+    ],
+    "Price": [
+      { "_id": "6542ae189c93ac9c1afdfbb7", "duration": "1 Month", "price": "10" }
+    ],
+    "__v": 0
+  }
+]

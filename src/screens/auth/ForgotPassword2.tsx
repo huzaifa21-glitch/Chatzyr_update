@@ -86,7 +86,7 @@ export default function ForgotPassword2({ navigation, route }: any) {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#D32F2F" />
+   
 
       {/* Red Header */}
       <View style={styles.header}>

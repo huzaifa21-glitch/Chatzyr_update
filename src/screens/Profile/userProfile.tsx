@@ -46,7 +46,7 @@ export default function UserProfileScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
+      
 
       <ScrollView
         showsVerticalScrollIndicator={false}

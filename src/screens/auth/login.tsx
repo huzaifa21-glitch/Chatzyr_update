@@ -14,7 +14,14 @@ import {
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-// import Logo from "../../../assets/Logos/logo.png";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import useAuthStore from "../../../store/useAuthStore";
+import useAppStore from "../../../store/useAppStore";
+import { ipv4 } from "../../utils/config";
+import Toast from "react-native-toast-message";
+WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,6 +29,10 @@ export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const saveAuth = useAuthStore((state) => state.saveAuth);
+  const initializeApp = useAppStore((state) => state.initializeApp);
 
   const SOCIAL_LINKS = {
     facebook:
@@ -34,10 +45,48 @@ export default function LoginScreen({ navigation }: any) {
     Linking.openURL(url);
   };
 
-  const handleLogin = () => {
-    // Add your login logic here
-    navigation?.navigate("Home");
-    console.log("Login pressed", { email, password });
+  // REPLACE your existing handleLogin with this
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Toast.show({
+        type: "error",
+        text1: "Empty Fields",
+        text2: "Please fill all fields",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${ipv4}login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const userEmail = data.user.email; // ← get email directly from user object
+
+        // console.log('userEmail:', userEmail)
+        // console.log("Login successful",data)
+        await saveAuth(data.token, data.user); // saves to AsyncStorage
+        initializeApp(data.token, userEmail); // fetches 3 APIs
+        // ✅ No navigation needed — AppNavigator auto-switches to Home
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Login Failed",
+          text2: data.message || "Invalid email or password",
+        });
+      }
+    } catch (err) {
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2: "An error occurred while logging in",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUp = () => {
@@ -53,7 +102,7 @@ export default function LoginScreen({ navigation }: any) {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#D32F2F" />
+     
 
       {/* Red Header Section */}
       <View style={styles.header}>
@@ -123,11 +172,14 @@ export default function LoginScreen({ navigation }: any) {
 
           {/* Login Button */}
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, loading && { opacity: 0.6 }]}
             onPress={handleLogin}
+            disabled={loading} // ← prevents multiple presses
             activeOpacity={0.85}
           >
-            <Text style={styles.loginButtonText}>Login</Text>
+            <Text style={styles.loginButtonText}>
+              {loading ? "Logging in..." : "Login"}
+            </Text>
           </TouchableOpacity>
 
           {/* Divider */}

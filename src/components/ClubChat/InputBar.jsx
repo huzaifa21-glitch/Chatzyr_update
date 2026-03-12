@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#eee",
     gap: 8,
-    // marginBottom: Platform.OS === "ios" ? 20 : 10,
+    marginBottom: Platform.OS === "ios" ? 20 : 10,
   },
   attachBtn: {
     padding: 4,

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { Video, ResizeMode } from "expo-av";
+import { Ionicons } from "@expo/vector-icons";
+import { VideoView, useVideoPlayer } from "expo-video";
 import YoutubePlayer from "react-native-youtube-iframe";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const PLAYER_HEIGHT = width * (9 / 16);
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ const isYoutubeUrl = (url: string) =>
 interface VideoItem {
   id: string;
   title: string;
-  url: string; // YouTube URL or IPTV .m3u8 stream URL
+  url: string;
 }
 
 interface VideoPlayerProps {
@@ -38,15 +38,28 @@ interface VideoPlayerProps {
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function VideoPlayer({ playlist, onIndexChange }: VideoPlayerProps) {
+export default function VideoPlayer({
+  playlist,
+  onIndexChange,
+}: VideoPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
-  const videoRef = useRef<Video>(null);
 
   const current = playlist[currentIndex];
   const isYT = isYoutubeUrl(current.url);
   const youtubeId = isYT ? getYoutubeId(current.url) : null;
+
+  const player = useVideoPlayer(current.url, (player) => {
+    player.loop = false;
+  });
+
+  useEffect(() => {
+    if (!isYT) {
+      player.replace(current.url);
+      setPlaying(false);
+    }
+  }, [currentIndex]);
 
   const goTo = (index: number) => {
     if (index < 0 || index >= playlist.length) return;
@@ -55,7 +68,25 @@ export default function VideoPlayer({ playlist, onIndexChange }: VideoPlayerProp
     onIndexChange?.(index);
   };
 
-  const togglePlay = () => setPlaying((prev) => !prev);
+  const togglePlay = () => {
+    if (player.playing) {
+      player.pause();
+      setPlaying(false);
+    } else {
+      player.play();
+      setPlaying(true);
+    }
+  };
+
+  useEffect(() => {
+    const sub = player.addListener("statusChange", (status: any) => {
+      if (status.status === "loading") setLoading(true);
+      if (status.status === "ready") setLoading(false);
+      if (status.status === "ended") setPlaying(false);
+    });
+
+    return () => sub.remove();
+  }, [player]);
 
   return (
     <View style={styles.container}>
@@ -74,30 +105,21 @@ export default function VideoPlayer({ playlist, onIndexChange }: VideoPlayerProp
             }}
           />
         ) : (
-          <Video
-            ref={videoRef}
-            source={{ uri: current.url }}
-            style={styles.nativeVideo}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={playing}
-            onLoadStart={() => setLoading(true)}
-            onLoad={() => setLoading(false)}
-            onPlaybackStatusUpdate={(status: any) => {
-              if (status.didJustFinish) setPlaying(false);
-            }}
-          />
+          <VideoView player={player} style={styles.nativeVideo} nativeControls={false} />
         )}
 
-        {/* Loading overlay */}
         {loading && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator color="#fff" size="large" />
           </View>
         )}
 
-        {/* Play/Pause overlay — only for non-YouTube (YT has its own controls) */}
         {!isYT && (
-          <TouchableOpacity style={styles.playOverlay} onPress={togglePlay} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.playOverlay}
+            onPress={togglePlay}
+            activeOpacity={0.8}
+          >
             {!playing && (
               <View style={styles.playIconCircle}>
                 <Ionicons name="play" size={32} color="#fff" />
@@ -109,12 +131,10 @@ export default function VideoPlayer({ playlist, onIndexChange }: VideoPlayerProp
 
       {/* ── Controls Bar ────────────────────────────── */}
       <View style={styles.controls}>
-        {/* Prev */}
         <TouchableOpacity
           style={[styles.controlBtn, currentIndex === 0 && styles.controlBtnDisabled]}
           onPress={() => goTo(currentIndex - 1)}
           disabled={currentIndex === 0}
-          activeOpacity={0.7}
         >
           <Ionicons
             name="play-skip-back"
@@ -123,24 +143,23 @@ export default function VideoPlayer({ playlist, onIndexChange }: VideoPlayerProp
           />
         </TouchableOpacity>
 
-        {/* Play/Pause — for IPTV only; YouTube has built-in */}
         {!isYT && (
-          <TouchableOpacity style={styles.mainPlayBtn} onPress={togglePlay} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.mainPlayBtn} onPress={togglePlay}>
             <Ionicons name={playing ? "pause" : "play"} size={22} color="#fff" />
           </TouchableOpacity>
         )}
 
-        {/* Title */}
         <Text style={styles.titleText} numberOfLines={1}>
           {current.title}
         </Text>
 
-        {/* Next */}
         <TouchableOpacity
-          style={[styles.controlBtn, currentIndex === playlist.length - 1 && styles.controlBtnDisabled]}
+          style={[
+            styles.controlBtn,
+            currentIndex === playlist.length - 1 && styles.controlBtnDisabled,
+          ]}
           onPress={() => goTo(currentIndex + 1)}
           disabled={currentIndex === playlist.length - 1}
-          activeOpacity={0.7}
         >
           <Ionicons
             name="play-skip-forward"
@@ -169,33 +188,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
   },
 
-  // ── Player ───────────────────────────────────────────
   playerWrapper: {
     width: width,
     height: PLAYER_HEIGHT,
     backgroundColor: "#000",
-    position: "relative",
   },
-  // YouTube sizes itself — no fixed height needed
+
   playerWrapperYT: {
     width: width,
     backgroundColor: "#000",
   },
+
   nativeVideo: {
     width: "100%",
     height: "100%",
   },
+
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
   },
+
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
   },
+
   playIconCircle: {
     width: 64,
     height: 64,
@@ -207,7 +228,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.4)",
   },
 
-  // ── Controls ─────────────────────────────────────────
   controls: {
     flexDirection: "row",
     alignItems: "center",
@@ -216,6 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
   },
+
   controlBtn: {
     width: 36,
     height: 36,
@@ -224,9 +245,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   controlBtnDisabled: {
     backgroundColor: "#222",
   },
+
   mainPlayBtn: {
     width: 40,
     height: 40,
@@ -235,6 +258,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
   titleText: {
     flex: 1,
     color: "#eee",
@@ -242,7 +266,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // ── Dots ─────────────────────────────────────────────
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -251,12 +274,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: "#1a1a1a",
   },
+
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: "#555",
   },
+
   dotActive: {
     width: 18,
     height: 6,

@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppDrawer from "../../../Drawer/AppDrawer";
-
+import useAuthStore from '../../../store/useAuthStore'
+import useAppStore from '../../../store/useAppStore'
 const CLUBS = [
     {
         id: "1",
@@ -58,11 +59,26 @@ const CLUBS = [
 ];
 
 export default function ClubsScreen({ navigation }) {
+    const clearAuth = useAuthStore((state) => state.clearAuth)
+    const resetApp = useAppStore((state) => state.resetApp)
+    const user = useAuthStore((state) => state.user)
     const [search, setSearch] = useState("");
     const [drawerOpen, setDrawerOpen] = useState(false);
     const filtered = CLUBS.filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase())
     );
+
+
+    const handleLogout = async () => {
+        await clearAuth()  // clears token from AsyncStorage + Zustand
+        resetApp()         // clears badges, colors, packages
+        // ✅ token becomes null → AppNavigator auto-switches to Login stack
+    }
+    const getTag = (user) => {
+        if (user?.email?.toLowerCase() === 'leohax@gmail.com') return 'Admin'
+        if (user?.premium === 'vip1' || user?.premium === 'vip2') return 'VIP Member'
+        return 'Member'
+    }
 
     const renderClub = ({ item }) => (
         <TouchableOpacity
@@ -97,17 +113,18 @@ export default function ClubsScreen({ navigation }) {
 
     return (
         <>
-            {/* <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" /> */}
+         
             <AppDrawer
                 visible={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
                 navigation={navigation}
                 activeRoute="Home"
-                user={{ name: "John Doe", avatar: "https://i0.wp.com/www.photographers.ch/wp/wp-content/uploads/2016/01/PW_151015_001-sw.jpg?resize=825%2C1100&ssl=1", tag: "Admin" }}
-                onLogout={() => {
-                    // clear zustand store, navigate to login
-                    navigation.replace("Login");
+                user={{
+                    name: user?.username || 'User',   // ← from your login response
+                    avatar: user?.pic,                // ← profile picture
+                   tag: getTag(user),      // ← vip2, etc.
                 }}
+                onLogout={handleLogout}
             />
             {/* Header */}
             <View style={styles.header}>

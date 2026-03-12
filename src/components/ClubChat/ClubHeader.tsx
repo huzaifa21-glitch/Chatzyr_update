@@ -9,7 +9,10 @@ import {
   Easing,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
+import VIPDrawer from "./VIPDrawer";
+import { ipv4 } from "../../utils/config";
+import axios from "axios";
+import useAuthStore from '../../../store/useAuthStore';
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ClubHeaderProps {
   clubName?: string;
@@ -22,20 +25,21 @@ interface ClubHeaderProps {
   onChatColor?: () => void;
   onBadges?: () => void;
   onBlockList?: () => void;
+  navigation?: any; // ← for navigating to BlockList, etc.
 }
 
 // ─── Menu Items ──────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
-  { key: "edit",      label: "Edit Club",       icon: "create-outline"       },
-  { key: "color",     label: "Name/Chat Color", icon: "color-palette-outline" },
-  { key: "badges",    label: "Badges",          icon: "ribbon-outline"        },
-  { key: "blocklist", label: "Block List",      icon: "ban-outline"           },
+  { key: "edit", label: "Edit Club", icon: "create-outline" },
+  { key: "color", label: "Name/Chat Color", icon: "color-palette-outline" },
+  { key: "badges", label: "Badges", icon: "ribbon-outline" },
+  { key: "blocklist", label: "Block List", icon: "ban-outline" },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function ClubHeader({
   clubName = "General Chat Room",
-  members = 0,
+  members = 9,
   maxMembers = 35,
   onMenuPress,
   onNotificationPress,
@@ -44,11 +48,14 @@ export default function ClubHeader({
   onChatColor,
   onBadges,
   onBlockList,
+  navigation,
 }: ClubHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
+  const [vipDrawerOpen, setVipDrawerOpen] = useState(false);
+    const user = useAuthStore((state) => state.user)
   const openMenu = () => {
     setMenuOpen(true);
     Animated.parallel([
@@ -85,33 +92,64 @@ export default function ClubHeader({
   const handleItemPress = (key: string) => {
     closeMenu();
     switch (key) {
-      case "edit":      onEditClub?.();   break;
-      case "color":     onChatColor?.();  break;
-      case "badges":    onBadges?.();     break;
-      case "blocklist": onBlockList?.();  break;
+      case "edit":
+        onEditClub?.();
+        break;
+      case "color":
+        onChatColor?.();
+        break;
+      case "badges":
+        onBadges?.();
+        break;
+      case "blocklist":
+        onBlockList?.();
+        break;
     }
   };
 
   return (
     <View>
       <View style={styles.header}>
-        {/* Left — Menu + Club Info */}
+        <VIPDrawer
+          visible={vipDrawerOpen}
+          onClose={() => setVipDrawerOpen(!vipDrawerOpen)}
+          user={{ name: "John Doe", avatar: user.pic, isVip: false }}
+          onBuyVip={async (planId) => {
+            await axios.post(`${ipv4}buyvip`, { planId });
+          }}
+          onGiftVip={async (planId, username) => {
+            await axios.post(`${ipv4}giftvip`, { planId, username });
+          }}
+        />
+
         <View style={styles.left}>
-          <TouchableOpacity style={styles.iconBtn} onPress={onMenuPress}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => setVipDrawerOpen(true)}>
             <Ionicons name="menu" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.clubInfo}>
-            <Text style={styles.clubName} numberOfLines={1}>{clubName}</Text>
-            <View style={styles.onlineRow}>
+            <Text style={styles.clubName} numberOfLines={1}>
+              {clubName}
+            </Text>
+            <TouchableOpacity
+              style={styles.onlineRow}
+              onPress={() => {
+                navigation.navigate("Members");
+              }}
+            >
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>{members}/{maxMembers} online</Text>
-            </View>
+              <Text style={styles.onlineText}>
+                {members}/{maxMembers} online
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* Right — Notification, Inbox, More */}
         <View style={styles.right}>
-          <TouchableOpacity style={styles.iconBtn} onPress={onNotificationPress}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={onNotificationPress}
+          >
             <Ionicons name="notifications-outline" size={22} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={onInboxPress}>
