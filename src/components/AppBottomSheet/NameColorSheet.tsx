@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 import useAppStore from "../../../store/useAppStore"; // ← adjust path
@@ -62,6 +63,7 @@ export default function NameColorSheet({
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.container}
@@ -174,6 +176,7 @@ export default function NameColorSheet({
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

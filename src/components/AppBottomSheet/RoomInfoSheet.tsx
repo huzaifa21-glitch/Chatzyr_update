@@ -8,43 +8,42 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 interface RoomInfoSheetProps {
   room?: {
     name: string;
-    description: string;
-    image: string;
-    members: number;
+    bio: string;
+    badgeurl: string;
+    onlineCount: number;
     maxMembers: number;
     likes: number;
-    ownerName: string;
-    ownerAvatar: string;
-    ownerBadge: string;
+    roomOwner: string;
   };
   onClose?: () => void;
 }
 
-const DEFAULT_ROOM = {
-  name: "General Chat Room",
-  description: "A place for everyone to connect, share ideas, and have fun conversations. All topics welcome — keep it respectful!",
-  image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
-  members: 8,
-  maxMembers: 35,
-  likes: 142,
-  ownerName: "John Doe",
-  ownerAvatar: "https://i.pravatar.cc/150?img=1",
-  ownerBadge: "🔥",
-};
 
-export default function RoomInfoSheet({ room = DEFAULT_ROOM, onClose }: RoomInfoSheetProps) {
-  const fillPercent = Math.round((room.members / room.maxMembers) * 100);
+
+export default function RoomInfoSheet({ room, onClose }: RoomInfoSheetProps) {
+  if (!room) {
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Room info unavailable</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const fillPercent = Math.round((room.onlineCount / 100) * 100);
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
 
       {/* Room Image */}
       <View style={styles.imageWrapper}>
-        <Image source={{ uri: room.image }} style={styles.roomImage} />
+        <Image source={{ uri: room.badgeurl }} style={styles.roomImage} />
         <View style={styles.imageOverlay} />
         <Text style={styles.roomNameOverlay}>{room.name}</Text>
       </View>
@@ -53,7 +52,7 @@ export default function RoomInfoSheet({ room = DEFAULT_ROOM, onClose }: RoomInfo
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Ionicons name="people" size={18} color="#D32F2F" />
-          <Text style={styles.statValue}>{room.members}/{room.maxMembers}</Text>
+          <Text style={styles.statValue}>{room.onlineCount}/{100}</Text>
           <Text style={styles.statLabel}>Members</Text>
         </View>
         <View style={styles.statDivider} />
@@ -76,22 +75,23 @@ export default function RoomInfoSheet({ room = DEFAULT_ROOM, onClose }: RoomInfo
 
       {/* Description */}
       <Text style={styles.sectionTitle}>About</Text>
-      <Text style={styles.description}>{room.description}</Text>
+      <Text style={styles.description}>{room.bio}</Text>
 
       {/* Owner */}
       <Text style={styles.sectionTitle}>Owner</Text>
       <View style={styles.ownerRow}>
-        <View style={styles.ownerAvatarWrapper}>
+        {/* <View style={styles.ownerAvatarWrapper}>
           <Image source={{ uri: room.ownerAvatar }} style={styles.ownerAvatar} />
           <Text style={styles.ownerBadge}>{room.ownerBadge}</Text>
-        </View>
-        <Text style={styles.ownerName}>{room.ownerName}</Text>
+        </View> */}
+        <Text style={styles.ownerName}>{room.roomOwner}</Text>
         <View style={styles.ownerPill}>
           <Text style={styles.ownerPillText}>Owner</Text>
         </View>
       </View>
 
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -99,18 +99,29 @@ const styles = StyleSheet.create({
   container: {
     paddingBottom: 24,
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#555",
+  },
 
   // ── Image ────────────────────────────────────────────
   imageWrapper: {
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 16,
-    height: 140,
+    height: 200,
     position: "relative",
   },
   roomImage: {
     width: "100%",
     height: "100%",
+    // resizeMode: "cover",
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,

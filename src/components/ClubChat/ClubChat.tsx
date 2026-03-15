@@ -1,222 +1,153 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
+  View, Text, TouchableOpacity, FlatList,
+  StyleSheet, KeyboardAvoidingView, Platform,
+  Image, ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import InputBar from "./InputBar";
-import Loader from "../Loader/Loader";
+import useChatStore from '../../../store/useChatStore'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface Message {
-  id: string;
-  type?: "date";
-  label?: string;
-  user?: string;
-  text?: string;
-  avatar?: string;
-  time?: string;
-  tag?: "admin" | "mod1" | "mod2" | "member";
-  badgeEmoji?: string;
+type ClubChatProps = {
+  room?: any
+  messages: any[]
+  onlineUsers: any[]
+  typingUsers: any[]
+  isConnected: boolean
+  isConnecting: boolean
+  currentUserEmail?: string
+  onSendMessage: (content: string) => void
+  onStartTyping: () => void
+  onStopTyping: () => void
+  navigation?: any
 }
 
-interface ClubChatProps {
-  clubId?: string;
-  navigation?: any;
+const formatTime = (isoString: string) => {
+  try {
+    return new Date(isoString).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit'
+    })
+  } catch { return '' }
 }
 
-// ─── Tag Config ──────────────────────────────────────────────────────────────
-const TAG_CONFIG: Record<string, { label: string; color: string; bg: string }> =
-  {
-    admin: { label: "Admin", color: "#fff", bg: "#D32F2F" },
-    mod1: { label: "Mod I", color: "#fff", bg: "#1565C0" },
-    mod2: { label: "Mod II", color: "#fff", bg: "#6A1B9A" },
-    member: { label: "Member", color: "#888", bg: "#e8e8e8" },
-  };
+const ClubChat: React.FC<ClubChatProps> = ({
+  room, messages, onlineUsers, typingUsers,
+  isConnected, isConnecting, currentUserEmail,
+  onSendMessage, onStartTyping, onStopTyping, navigation,
+}) => {
+  const [inputText, setInputText] = useState("")
+  const [initialScrollDone, setInitialScrollDone] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const flatListRef = useRef<FlatList>(null)
+  const typingTimer = useRef<any>(null)
+  const loadMore = useChatStore((state) => state.loadMore)
+  const hasMore = useChatStore((state) => state.hasMore)
 
-const USER_COLORS: Record<string, string> = {
-  John: "#E65100",
-  Athalia: "#C2185B",
-  Sofia: "#1565C0",
-  Alex: "#2E7D32",
-  You: "#D32F2F",
-};
-const getNameColor = (name: string) => USER_COLORS[name] ?? "#555";
-
-// ─── Dummy Data ──────────────────────────────────────────────────────────────
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: "1",
-    user: "John",
-    text: "Can I come over?",
-    avatar: "https://i.pravatar.cc/150?img=1",
-    time: "10:24 AM",
-    tag: "admin",
-    badgeEmoji: "🔥",
-  },
-  {
-    id: "2",
-    user: "Athalia",
-    text: "Of course, let me know before coming",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    time: "10:25 AM",
-    tag: "mod1",
-    badgeEmoji: "⭐",
-  },
-  {
-    id: "3",
-    user: "Sofia",
-    text: "K, I'm on my way",
-    avatar: "https://i.pravatar.cc/150?img=9",
-    time: "10:26 AM",
-    tag: "mod2",
-    badgeEmoji: "💎",
-  },
-  {
-    id: "4",
-    user: "Sofia",
-    text: "Good Night everyone!",
-    avatar: "https://i.pravatar.cc/150?img=9",
-    time: "11:59 PM",
-    tag: "mod2",
-    badgeEmoji: "💎",
-  },
-  {
-    id: "date-1",
-    type: "date",
-    label: "Sat, 17/10",
-  },
-  {
-    id: "5",
-    user: "John",
-    text: "Good Morning Athalia",
-    avatar: "https://i.pravatar.cc/150?img=1",
-    time: "8:01 AM",
-    tag: "admin",
-    badgeEmoji: "🔥",
-  },
-  {
-    id: "6",
-    user: "Athalia",
-    text: "Good Morning John 👋",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    time: "8:03 AM",
-    tag: "mod1",
-    badgeEmoji: "⭐",
-  },
-  {
-    id: "7",
-    user: "Alex",
-    text: "Hey everyone, new here!",
-    avatar: "https://i.pravatar.cc/150?img=3",
-    time: "8:10 AM",
-    tag: "member",
-    badgeEmoji: "🌱",
-  },
-];
-
-// ─── Component ───────────────────────────────────────────────────────────────
-export default function ClubChat({ clubId, navigation }: ClubChatProps) {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [inputText, setInputText] = useState("");
-  const flatListRef = useRef<FlatList>(null);
-
-  const sendMessage = () => {
-    const text = inputText.trim();
-    if (!text) return;
-
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      user: "You",
-      text,
-      avatar: "https://i.pravatar.cc/150?img=12",
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      tag: "member",
-      badgeEmoji: "🌱",
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
-    setInputText("");
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
-  };
-
-  const handleReport = (id: string) => {
-    // Hook up your report logic here
-    console.log("Reported message:", id);
-  };
-
-  const renderItem = ({ item }: { item: Message }) => {
-    // Date separator
-    if (item.type === "date") {
-      return (
-        <View style={styles.dateSeparator}>
-          <View style={styles.dateLine} />
-          <Text style={styles.dateLabel}>{item.label}</Text>
-          <View style={styles.dateLine} />
-        </View>
-      );
+  // ── Scroll to bottom ONCE when messages first load ───
+  useEffect(() => {
+    if (messages.length > 0 && !initialScrollDone && isConnected) {
+      // Small delay to ensure FlatList has rendered
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false })
+        setInitialScrollDone(true)
+      }, 300)
     }
+  }, [messages.length, isConnected])
 
-    const tagCfg = TAG_CONFIG[item.tag ?? "member"];
+  // ── Scroll to bottom on new message ─────────────────
+  const prevLengthRef = useRef(0)
+  useEffect(() => {
+    if (messages.length > prevLengthRef.current && initialScrollDone) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true })
+      }, 100)
+    }
+    prevLengthRef.current = messages.length
+  }, [messages.length])
+
+  // ── Load more on scroll to top ───────────────────────
+  const handleLoadMore = async () => {
+    if (!hasMore || loadingMore) return
+    setLoadingMore(true)
+    await new Promise(resolve => setTimeout(resolve, 300)) // ← small delay feels natural
+    loadMore()
+    setLoadingMore(false)
+  }
+
+  // ── Send ─────────────────────────────────────────────
+  const handleSend = () => {
+    const text = inputText.trim()
+    if (!text) return
+    onSendMessage(text)
+    setInputText("")
+    onStopTyping()
+    if (typingTimer.current) clearTimeout(typingTimer.current)
+  }
+
+  // ── Typing ───────────────────────────────────────────
+  const handleTextChange = (text: string) => {
+    setInputText(text)
+    if (text.length > 0) {
+      onStartTyping()
+      if (typingTimer.current) clearTimeout(typingTimer.current)
+      typingTimer.current = setTimeout(() => onStopTyping(), 2000)
+    } else {
+      onStopTyping()
+    }
+  }
+
+  // ── Render message ───────────────────────────────────
+  const renderItem = ({ item }: { item: any }) => {
+    const isMe = item.user_id === currentUserEmail
+    const nameColor = item.usernamecolor || '#555'
+    const chatColor = item.chatcolor || '#333'
 
     return (
       <View style={styles.messageRow}>
-        {/* <Loader overlay visible={true} message="Please wait..." /> */}
-        {/* Avatar + Badge */}
         <TouchableOpacity
-          onPress={() =>
-            navigation?.navigate("UserProfile", { user: item.user })
-          }
+          onPress={() => navigation?.navigate("UserProfile", { userEmail: item.user_id })}
         >
           <View style={styles.avatarWrapper}>
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={styles.badge}>
-              <Text style={styles.badgeEmoji}>{item.badgeEmoji}</Text>
-            </View>
+            <Image
+              source={{ uri: item.pic || 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png' }}
+              style={styles.avatar}
+            />
+            {item.badge && (
+              <Image source={{ uri: item.badge }} style={styles.badgeImg} resizeMode="contain" />
+            )}
           </View>
         </TouchableOpacity>
 
-        {/* Content */}
         <View style={styles.messageContent}>
-          {/* Name + Tag + Time */}
           <View style={styles.nameRow}>
-            <Text
-              style={[styles.userName, { color: getNameColor(item.user!) }]}
-            >
-              {item.user}
+            <Text style={[styles.userName, { color: nameColor }]}>
+              {isMe ? 'You' : (item.username || item.user_id)}
             </Text>
-            <View style={[styles.tagPill, { backgroundColor: tagCfg.bg }]}>
-              <Text style={[styles.tagText, { color: tagCfg.color }]}>
-                {tagCfg.label}
-              </Text>
-            </View>
-            <Text style={styles.timeText}>{item.time}</Text>
+            {(item.premium === 'vip1' || item.premium === 'vip2') && (
+              <View style={styles.vipPill}>
+                <Text style={styles.vipText}>VIP</Text>
+              </View>
+            )}
+            <Text style={styles.timeText}>{formatTime(item.time)}</Text>
           </View>
-
-          {/* Message + Report */}
-          <View style={styles.messageBody}>
-            <Text style={styles.messageText}>{item.text}</Text>
-            <TouchableOpacity
-              style={styles.reportBtn}
-              onPress={() => handleReport(item.id)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="flag-outline" size={14} color="#ccc" />
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.messageText, { color: chatColor }]}>
+            {item.content}
+          </Text>
         </View>
       </View>
-    );
-  };
+    )
+  }
+
+  // ── Better full screen loader ─────────────────────────
+  if (isConnecting && messages.length === 0) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#D32F2F" />
+        <Text style={styles.loaderText}>Joining room...</Text>
+        <Text style={styles.loaderSub}>Loading messages</Text>
+      </View>
+    )
+  }
 
   return (
     <KeyboardAvoidingView
@@ -224,146 +155,158 @@ export default function ClubChat({ clubId, navigation }: ClubChatProps) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      {/* Connection lost banner */}
+      {!isConnected && !isConnecting && (
+        <View style={styles.statusBanner}>
+          <Text style={styles.statusText}>🔴 Disconnected — retrying...</Text>
+        </View>
+      )}
+      {!isConnected && isConnecting && messages.length > 0 && (
+        <View style={[styles.statusBanner, styles.statusBannerConnecting]}>
+          <Text style={styles.statusText}>⏳ Reconnecting...</Text>
+        </View>
+      )}
+
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(_, index) => index.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: false })
+        // ── Load more when scrolled to top ──
+        onScrollBeginDrag={() => {}}
+        onEndReachedThreshold={1}
+        ListHeaderComponent={
+          loadingMore ? (
+            <View style={styles.loadMoreIndicator}>
+              <ActivityIndicator size="small" color="#D32F2F" />
+              <Text style={styles.loadMoreText}>Loading older messages...</Text>
+            </View>
+          ) : hasMore ? (
+            <TouchableOpacity style={styles.loadMoreBtn} onPress={handleLoadMore}>
+              <Text style={styles.loadMoreBtnText}>Load older messages</Text>
+            </TouchableOpacity>
+          ) : null
         }
-        // onLayout={
-        //   () => flatListRef.current?.scrollToEnd({ animated: false }) // ← ADD this
-        // }
-        // maintainVisibleContentPosition={{
-        //   // ← ADD this
-        //   minIndexForVisible: 0,
-        // }}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No messages yet. Say hello! 👋</Text>
+          </View>
+        }
       />
- 
+
+      {/* Typing indicator */}
+      {typingUsers.filter(e => e !== currentUserEmail).length > 0 && (
+        <View style={styles.typingRow}>
+          <Text style={styles.typingText}>
+            {typingUsers.filter(e => e !== currentUserEmail).length === 1
+              ? `Someone is typing...`
+              : `Multiple people are typing...`}
+          </Text>
+        </View>
+      )}
+
       <InputBar
         inputText={inputText}
-        setInputText={setInputText}
-        sendMessage={sendMessage}
+        setInputText={handleTextChange}
+        sendMessage={handleSend}
       />
     </KeyboardAvoidingView>
-  );
+  )
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+export default ClubChat
+
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
+
+  // ── Full screen loader ───────────────────────────
+  loaderContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    gap: 12,
+  },
+  loaderText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+  },
+  loaderSub: {
+    fontSize: 13,
+    color: '#aaa',
+  },
+
+  // ── Status banners ───────────────────────────────
+  statusBanner: {
+    backgroundColor: '#ffebee',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  statusBannerConnecting: { backgroundColor: '#fff8e1' },
+  statusText: { fontSize: 12, color: '#555', fontWeight: '600' },
+
+  // ── Load more ────────────────────────────────────
+  loadMoreIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  loadMoreText: { fontSize: 12, color: '#888' },
+  loadMoreBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  loadMoreBtnText: {
+    fontSize: 12,
+    color: '#D32F2F',
+    fontWeight: '600',
   },
 
   listContent: {
     paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 6,
     gap: 14,
   },
 
-  // ── Date Separator ───────────────────────────────────
-  dateSeparator: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 4,
-    gap: 8,
-  },
-  dateLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
-  },
-  dateLabel: {
-    fontSize: 11,
-    color: "#bbb",
-    fontWeight: "500",
-  },
-
-  // ── Message Row ──────────────────────────────────────
+  // ── Message Row ──────────────────────────────────
   messageRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
   },
-
-  // ── Avatar ───────────────────────────────────────────
-  avatarWrapper: {
-    position: "relative",
-    width: 40,
-    height: 40,
-  },
+  avatarWrapper: { position: "relative", width: 40, height: 40 },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#e0e0e0",
+    width: 40, height: 40, borderRadius: 20,
+    borderWidth: 1.5, borderColor: "#e0e0e0",
   },
-  badge: {
-    position: "absolute",
-    bottom: -2,
-    right: -4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  badgeImg: {
+    position: "absolute", bottom: -2, right: -4,
+    width: 18, height: 18, borderRadius: 9,
     backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#eee",
   },
-  badgeEmoji: {
-    fontSize: 10,
+  messageContent: { flex: 1, gap: 3 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  userName: { fontSize: 13, fontWeight: "700" },
+  vipPill: {
+    backgroundColor: '#FFF3CD',
+    paddingHorizontal: 6, paddingVertical: 1, borderRadius: 20,
   },
+  vipText: { fontSize: 9, fontWeight: '800', color: '#E6A817', letterSpacing: 0.5 },
+  timeText: { fontSize: 10, color: "#bbb", marginLeft: "auto" },
+  messageText: { flex: 1, fontSize: 14, lineHeight: 20 },
 
-  // ── Content ──────────────────────────────────────────
-  messageContent: {
-    flex: 1,
-    gap: 3,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  userName: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  tagPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 20,
-  },
-  tagText: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  timeText: {
-    fontSize: 10,
-    color: "#bbb",
-    marginLeft: "auto",
-  },
+  // ── Typing ───────────────────────────────────────
+  typingRow: { paddingHorizontal: 16, paddingVertical: 6, backgroundColor: '#f5f5f5' },
+  typingText: { fontSize: 12, color: '#888', fontStyle: 'italic' },
 
-  // ── Message Body ─────────────────────────────────────
-  messageBody: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 6,
-  },
-  messageText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
-  },
-  reportBtn: {
-    paddingTop: 3,
-  },
-});
+  // ── Empty ────────────────────────────────────────
+  emptyState: { alignItems: 'center', marginTop: 60 },
+  emptyText: { fontSize: 14, color: '#bbb' },
+})

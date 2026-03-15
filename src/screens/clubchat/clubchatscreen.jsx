@@ -1,13 +1,8 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
+
 import VideoPlayer from "../../components/Videoplayer/VideoPlayer";
 import ClubChat from "../../components/ClubChat/ClubChat";
 import ClubHeader from "../../components/ClubChat/ClubHeader";
@@ -16,68 +11,91 @@ import RoomInfoSheet from "../../components/AppBottomSheet/RoomInfoSheet";
 import BadgeUpdateSheet from "../../components/AppBottomSheet/BadgeUpdateSheet";
 import NameColorSheet from "../../components/AppBottomSheet/NameColorSheet";
 
-const PLAYLIST = [
-  { id: "1", title: "General Club Stream", url: "https://youtu.be/dQw4w9WgXcQ" },
-  { id: "2", title: "IPTV Channel 1", url: "https://yourstream.com/live.m3u8" },
-  { id: "3", title: "Another Video", url: "https://www.youtube.com/watch?v=5kNgRHPjxVk" },
-];
+import useSocket from '../../../hooks/useSocket'
+import useChatStore from '../../../store/useChatStore'
+import useAuthStore from '../../../store/useAuthStore'
 
 export default function ClubChatScreen({ navigation, route }) {
-  const clubName = route?.params?.club?.name ?? "General Chat Room";
-  const members = route?.params?.club?.members ?? 3;
-  const maxMembers = route?.params?.club?.maxMembers ?? 35;
-  const [sheet, setSheet] = useState(null);
-  var height = 100;
-  const DUMMY_CLUB = {
-    name: "General Chat Room",
-    description:
-      "A place for everyone to connect, share ideas, and have fun conversations. All topics welcome — keep it respectful and kind!",
-    image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
-    members: 8,
-    maxMembers: 35,
-    likes: 142,
-    ownerName: "John Doe",
-    ownerAvatar: "https://i.pravatar.cc/150?img=1",
-    ownerBadge: "🔥",
-  };
+  const club = route?.params?.room ?? {}
+  const roomId = club?.roomId
+
+  const [sheet, setSheet] = useState(null)
+
+  // ── Socket hook ────────────────────────────────
+  const { sendMessage, startTyping, stopTyping } = useSocket(roomId)
+
+  // ── Chat state from Zustand ────────────────────
+  const messages = useChatStore((state) => state.messages)
+  const onlineUsers = useChatStore((state) => state.onlineUsers)
+  const typingUsers = useChatStore((state) => state.typingUsers)
+  const isConnected = useChatStore((state) => state.isConnected)
+  const isConnecting = useChatStore((state) => state.isConnecting)
+  const user = useAuthStore((state) => state.user)
+
+  // ── Keep screen awake ──────────────────────────
+  useEffect(() => {
+    activateKeepAwakeAsync()
+    return () => deactivateKeepAwake()
+  }, [])
+
+  // ── Build playlist from room data ──────────────
+  const playlist = (club?.videourl || []).map((url, i) => ({
+    id: String(i),
+    title: `${club.name} — Stream ${i + 1}`,
+    url,
+  }))
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+
       <ClubHeader
         onEditClub={() => setSheet("roomInfo")}
         onChatColor={() => setSheet("nameColor")}
         onBadges={() => setSheet("badge")}
         onBlockList={() => navigation.navigate("BlockList")}
+        onMembers={() => navigation.navigate("Members", { onlineUsers })}
         navigation={navigation}
-      ></ClubHeader>
+        clubName={club.name}
+        members={onlineUsers.length}        // ← live count from socket
+        isConnected={isConnected}
+        isConnecting={isConnecting}
+      />
 
-      <AppBottomSheet visible={sheet !== null}
+      <AppBottomSheet
+        visible={sheet !== null}
         onClose={() => setSheet(null)}
         snapHeight={sheet === "badge" ? 900 * 0.7 : 950 * 0.55}
       >
-        {sheet === "roomInfo" && <RoomInfoSheet room={DUMMY_CLUB} />}
-        {sheet === "badge" && <BadgeUpdateSheet currentBadge="🔥" onSave={() => { console.log("Badge updated"); }} />}
-        {sheet === "nameColor" && <NameColorSheet currentName="John" currentColor="#D32F2F" onSave={() => { console.log("Badge updated"); }} />}
+        {sheet === "roomInfo" && <RoomInfoSheet room={club} />}
+        {sheet === "badge" && <BadgeUpdateSheet onSave={(badge) => console.log("Badge updated:", badge)} />}
+        {sheet === "nameColor" && <NameColorSheet onSave={(name, color) => console.log("Updated:", name, color)} />}
       </AppBottomSheet>
-      {/* ── Chat (fills all space between header and video) ── */}
+
+      {/* ── Chat ──────────────────────────────────── */}
       <View style={styles.chatArea}>
-        <ClubChat clubId={route?.params?.club?.id} navigation={navigation} />
+        <ClubChat
+          room={club}
+          messages={messages}
+          onlineUsers={onlineUsers}
+          typingUsers={typingUsers}
+          isConnected={isConnected}
+          isConnecting={isConnecting}
+          currentUserEmail={user?.email}
+          onSendMessage={sendMessage}
+          onStartTyping={startTyping}
+          onStopTyping={stopTyping}
+          navigation={navigation}
+        />
       </View>
 
-      {/* ── Video Player (pinned to bottom) ─────────── */}
-      <VideoPlayer playlist={PLAYLIST} />
+      {/* ── Video Player ──────────────────────────── */}
+      {playlist.length > 0 && <VideoPlayer playlist={playlist} />}
 
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f0f0f0",
-  },
-
-  chatArea: {
-    flex: 1,
-  },
-});
+  container: { flex: 1, backgroundColor: "#f0f0f0" },
+  chatArea: { flex: 1 },
+})

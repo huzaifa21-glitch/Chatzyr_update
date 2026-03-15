@@ -13,54 +13,57 @@ import { Ionicons } from "@expo/vector-icons";
 import AppDrawer from "../../../Drawer/AppDrawer";
 import useAuthStore from '../../../store/useAuthStore'
 import useAppStore from '../../../store/useAppStore'
-const CLUBS = [
-    {
-        id: "1",
-        name: "General Chat Room",
-        members: 8,
-        maxMembers: 35,
-        image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
-    },
-    {
-        id: "2",
-        name: "USA (Live)",
-        members: 3,
-        maxMembers: 35,
-        image: "https://minutemirror.com.pk/wp-content/uploads/2024/11/statue-liberty-usa.jpg",
-    },
-    {
-        id: "3",
-        name: "Pakistani Club",
-        members: 20,
-        maxMembers: 35,
-        image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80",
-    },
-    {
-        id: "4",
-        name: "Music Club",
-        members: 25,
-        maxMembers: 35,
-        image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
-    },
-    {
-        id: "5",
-        name: "Tech Talks",
-        members: 12,
-        maxMembers: 35,
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80",
-    },
-    {
-        id: "6",
-        name: "Sports Arena",
-        members: 35,
-        maxMembers: 35,
-        image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80",
-    },
-];
+// const CLUBS = [
+//     {
+//         id: "1",
+//         name: "General Chat Room",
+//         members: 8,
+//         maxMembers: 35,
+//         image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
+//     },
+//     {
+//         id: "2",
+//         name: "USA (Live)",
+//         members: 3,
+//         maxMembers: 35,
+//         image: "https://minutemirror.com.pk/wp-content/uploads/2024/11/statue-liberty-usa.jpg",
+//     },
+//     {
+//         id: "3",
+//         name: "Pakistani Club",
+//         members: 20,
+//         maxMembers: 35,
+//         image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80",
+//     },
+//     {
+//         id: "4",
+//         name: "Music Club",
+//         members: 25,
+//         maxMembers: 35,
+//         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
+//     },
+//     {
+//         id: "5",
+//         name: "Tech Talks",
+//         members: 12,
+//         maxMembers: 35,
+//         image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80",
+//     },
+//     {
+//         id: "6",
+//         name: "Sports Arena",
+//         members: 35,
+//         maxMembers: 35,
+//         image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80",
+//     },
+// ];
 
 export default function ClubsScreen({ navigation }) {
     const clearAuth = useAuthStore((state) => state.clearAuth)
     const resetApp = useAppStore((state) => state.resetApp)
+    const CLUBS = useAppStore((state) => state.rooms); 
+    // console.log(CLUBS);
+    
     const user = useAuthStore((state) => state.user)
     const [search, setSearch] = useState("");
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -84,13 +87,13 @@ export default function ClubsScreen({ navigation }) {
         <TouchableOpacity
             style={styles.card}
             activeOpacity={0.85}
-            onPress={() => navigation?.navigate("ClubChat")}
+            onPress={() => navigation?.navigate("ClubChat", { room: item })}
         >
-            <Image source={{ uri: item.image }} style={styles.cardImage} />
+            <Image source={{ uri: item.badgeurl }} style={styles.cardImage} />
             <View style={styles.cardContent}>
                 <Text style={styles.clubName}>{item.name}</Text>
                 <Text style={styles.membersText}>
-                    Members: {item.members}/{item.maxMembers}
+                    Members: {item.onlineCount}/{100}
                 </Text>
 
                 {/* Member count bar */}
@@ -98,7 +101,7 @@ export default function ClubsScreen({ navigation }) {
                     <View
                         style={[
                             styles.progressBarFill,
-                            { width: `${(item.members / item.maxMembers) * 100}%` },
+                            { width: `${(item.onlineCount / 100) * 100}%` },
                         ]}
                     />
                 </View>
@@ -166,7 +169,7 @@ export default function ClubsScreen({ navigation }) {
             {/* Club List */}
             <FlatList
                 data={filtered}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.roomId}
                 renderItem={renderClub}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}

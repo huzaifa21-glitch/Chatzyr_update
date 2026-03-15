@@ -7,6 +7,7 @@ const useAppStore = create((set, get) => ({
   badgesFree: [], // ← split into two
   badgesVip: [],
   colors: [],
+  rooms: [],
   packages: [],
   isLoading: false,
   isInitialized: false,
@@ -30,7 +31,7 @@ const useAppStore = create((set, get) => ({
     // console.log("🔑 token:", token);
 
     try {
-      const [badgesRes, colorsRes, packagesRes] = await Promise.all([
+      const [badgesRes, colorsRes, packagesRes, roomsRes] = await Promise.all([
         fetch(`${ipv4}loadbages`, { method: "POST", headers }),
         fetch(`${ipv4}fetchcolors`, {
           method: "POST",
@@ -38,33 +39,40 @@ const useAppStore = create((set, get) => ({
           body: JSON.stringify({ a: userEmail }),
         }),
         fetch(`${ipv4}api/packages`, { method: "GET", headers }),
+        fetch(`${ipv4}fetchData`, { method: "GET", headers }),
       ]);
 
       console.log("📡 badges status:", badgesRes.status);
       console.log("📡 colors status:", colorsRes.status);
       console.log("📡 packages status:", packagesRes.status);
+      console.log("📡 rooms status:", roomsRes.status);
 
       const badgesText = await badgesRes.text();
       const colorsText = await colorsRes.text();
       const packagesText = await packagesRes.text();
+      const roomsText = await roomsRes.text();
 
       //   console.log('📦 raw badges response:', badgesText)
-        // console.log('🎨 raw colors response:', colorsText)
-        // console.log('📦 raw packages response:', packagesText)
+      // console.log('🎨 raw colors response:', colorsText)
+      // console.log('📦 raw packages response:', packagesText)
+      // console.log('📡 raw rooms response:', roomsText)
 
       const badges = JSON.parse(badgesText);
       const colors = JSON.parse(colorsText);
       const packages = JSON.parse(packagesText);
+      const rooms = JSON.parse(roomsText);
 
-    //   console.log("✅ badges parsed:", badges);
-        // console.log('✅ colors parsed:', colors)
+      //   console.log("✅ badges parsed:", badges);
+      // console.log('✅ colors parsed:', colors)
       //   console.log('✅ packages parsed:', packages)
+        // console.log('✅ rooms parsed:', rooms)
 
       set({
         badgesFree: badges.free || [], // ← array of URLs
         badgesVip: badges.vip || [], // ← array of URLs
-         colors: colors.allcolors?.[0] || {},
+        colors: colors.allcolors?.[0] || {},
         packages,
+        rooms:rooms.documents || [],
         isLoading: false,
         isInitialized: true,
       });
@@ -79,9 +87,10 @@ const useAppStore = create((set, get) => ({
       badgesFree: [],
       badgesVip: [],
       colors: [],
+      rooms: [],
       packages: [],
       isInitialized: true,
-      isLoading: false, 
+      isLoading: false,
       error: null,
     }),
 }));
