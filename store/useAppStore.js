@@ -8,6 +8,7 @@ const useAppStore = create((set, get) => ({
   badgesVip: [],
   colors: [],
   rooms: [],
+  mods:[],
   packages: [],
   isLoading: false,
   isInitialized: false,
@@ -65,13 +66,14 @@ const useAppStore = create((set, get) => ({
       //   console.log("✅ badges parsed:", badges);
       // console.log('✅ colors parsed:', colors)
       //   console.log('✅ packages parsed:', packages)
-        // console.log('✅ rooms parsed:', rooms)
+        // console.log('✅ rooms parsed:', rooms.mymods[0].mod1)
 
       set({
         badgesFree: badges.free || [], // ← array of URLs
         badgesVip: badges.vip || [], // ← array of URLs
         colors: colors.allcolors?.[0] || {},
         packages,
+        mods: rooms.mymods[0].mod1 || {},
         rooms:rooms.documents || [],
         isLoading: false,
         isInitialized: true,
@@ -89,6 +91,7 @@ const useAppStore = create((set, get) => ({
       colors: [],
       rooms: [],
       packages: [],
+      mods: [],
       isInitialized: true,
       isLoading: false,
       error: null,

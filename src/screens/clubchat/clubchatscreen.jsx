@@ -32,6 +32,8 @@ export default function ClubChatScreen({ navigation, route }) {
   const isConnecting = useChatStore((state) => state.isConnecting)
   const user = useAuthStore((state) => state.user)
 
+  // console.log(onlineUsers);
+  
   // ── Keep screen awake ──────────────────────────
   useEffect(() => {
     activateKeepAwakeAsync()

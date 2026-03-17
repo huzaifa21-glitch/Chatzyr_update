@@ -13,22 +13,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import useAuthStore from '../../../store/useAuthStore'
+import useChatStore from '../../../store/useChatStore'
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3  // 3 columns
 
-// ─── Mock Data (replace with real socket/API data) ────────────────────────────
-const MOCK_MEMBERS = [
-  { id: "1",  username: "demon",       pic: "https://i.pravatar.cc/150?img=1",  premium: "vip2",  status: "online" },
-  { id: "2",  username: "LeoHax",      pic: "https://i.pravatar.cc/150?img=2",  premium: "vip1",  status: "online" },
-  { id: "3",  username: "StarGirl",    pic: "https://i.pravatar.cc/150?img=5",  premium: "free",  status: "online" },
-  { id: "4",  username: "NightOwl",    pic: "https://i.pravatar.cc/150?img=8",  premium: "vip2",  status: "online" },
-  { id: "5",  username: "CoolKid",     pic: "https://i.pravatar.cc/150?img=11", premium: "free",  status: "online" },
-  { id: "6",  username: "ChatKing",    pic: "https://i.pravatar.cc/150?img=15", premium: "vip1",  status: "online" },
-  { id: "7",  username: "SkyWalker",   pic: "https://i.pravatar.cc/150?img=20", premium: "free",  status: "online" },
-  { id: "8",  username: "RedPanda",    pic: "https://i.pravatar.cc/150?img=25", premium: "vip2",  status: "online" },
-  { id: "9",  username: "BlueWave",    pic: "https://i.pravatar.cc/150?img=30", premium: "free",  status: "online" },
-]
+
 
 const getPremiumColor = (premium: string) => {
   if (premium === 'vip2' || premium === 'vip1') return '#E6A817'  // ← warm rich gold for both
@@ -36,12 +26,15 @@ const getPremiumColor = (premium: string) => {
 }
 
 export default function MembersScreen({ navigation, route }: any) {
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState("") 
+  const onlineUsers = useChatStore((state) => state.onlineUsers)
+  //  console.log(onlineUsers);
+   
 
   // Replace MOCK_MEMBERS with your real members from socket/props
-  const members = MOCK_MEMBERS
+  const members = onlineUsers 
 
-  const filtered = members.filter((m) =>
+  const filtered = members.filter((m: { username: string; }) =>
     m.username.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -118,7 +111,7 @@ export default function MembersScreen({ navigation, route }: any) {
       {/* Grid */}
       <FlatList
         data={sorted}
-        keyExtractor={(item) => item.id}
+       keyExtractor={(item) => `${item.badge}_${item.email}`}
         numColumns={3}
         renderItem={renderMember}
         contentContainerStyle={styles.grid}
