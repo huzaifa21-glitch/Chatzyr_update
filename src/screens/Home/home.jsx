@@ -67,9 +67,30 @@ export default function ClubsScreen({ navigation }) {
     const user = useAuthStore((state) => state.user)
     const [search, setSearch] = useState("");
     const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const autoJoinOnLogin = useAppStore((state) => state.autoJoinOnLogin);
+    const setAutoJoinOnLogin = useAppStore((state) => state.setAutoJoinOnLogin);
+
     const filtered = CLUBS.filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase())
     );
+
+    // One-time auto join after fresh login sign-in
+    React.useEffect(() => {
+        if (!autoJoinOnLogin) return;
+        if (!CLUBS || CLUBS.length === 0) return;
+
+        const topRoom = CLUBS.reduce((best, current) => {
+            const bestCount = Number(best?.onlineCount ?? 0);
+            const currentCount = Number(current?.onlineCount ?? 0);
+            return currentCount > bestCount ? current : best;
+        }, CLUBS[0]);
+
+        if (topRoom?.roomId) {
+            setAutoJoinOnLogin(false);
+            navigation.navigate("ClubChat", { room: topRoom });
+        }
+    }, [autoJoinOnLogin, CLUBS, navigation, setAutoJoinOnLogin]);
 
 
     const handleLogout = async () => {

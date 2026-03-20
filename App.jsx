@@ -20,6 +20,7 @@ export default function App() {
   const isDarkMode = useColorScheme() === 'dark';
   const loadAuth = useAuthStore((state) => state.loadAuth)
   const initializeApp = useAppStore((state) => state.initializeApp)
+  const setAutoJoinOnLogin = useAppStore((state) => state.setAutoJoinOnLogin)
   const isInitialized = useAppStore((state) => state.isInitialized)
   const isLoading = useAppStore((state) => state.isLoading)
   const error = useAppStore((state) => state.error)
@@ -30,6 +31,9 @@ export default function App() {
       const { token, userEmail } = await loadAuth()
       // console.log('🔑 bootstrap token:', token)
       // console.log('📧 bootstrap email:', userEmail)
+      if (token && userEmail) {
+        setAutoJoinOnLogin(true)
+      }
       await initializeApp(token, userEmail)
     } catch(e) {
       console.error('bootstrap failed:', e)

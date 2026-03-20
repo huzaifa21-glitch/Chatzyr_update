@@ -33,6 +33,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const saveAuth = useAuthStore((state) => state.saveAuth);
   const initializeApp = useAppStore((state) => state.initializeApp);
+  const setAutoJoinOnLogin = useAppStore((state) => state.setAutoJoinOnLogin);
 
   const SOCIAL_LINKS = {
     facebook:
@@ -66,11 +67,15 @@ export default function LoginScreen({ navigation }: any) {
       if (data.success) {
         const userEmail = data.user.email; // ← get email directly from user object
 
-        // console.log('userEmail:', userEmail)
-        // console.log("Login successful",data)
         await saveAuth(data.token, data.user); // saves to AsyncStorage
-        initializeApp(data.token, userEmail); // fetches 3 APIs
-        // ✅ No navigation needed — AppNavigator auto-switches to Home
+        await initializeApp(data.token, userEmail); // fetches 3 APIs and returns room list
+
+        // Set 'auto join once on Home load after login'.
+        setAutoJoinOnLogin(true);
+
+        // AppNavigator will now switch to authenticated stack (Home/ClubChat/etc.).
+        // Home screen will perform the one-shot auto-join and clear the flag.
+
       } else {
         Toast.show({
           type: "error",

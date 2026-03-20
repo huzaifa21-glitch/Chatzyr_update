@@ -8,11 +8,13 @@ const useAppStore = create((set, get) => ({
   badgesVip: [],
   colors: [],
   rooms: [],
-  mods:[],
+  mods: [],
   packages: [],
   isLoading: false,
   isInitialized: false,
   error: null,
+  autoJoinOnLogin: false,
+  setAutoJoinOnLogin: (value) => set({ autoJoinOnLogin: value }),
 
   initializeApp: async (token, userEmail) => {
     if (!token || !userEmail) {
@@ -64,16 +66,18 @@ const useAppStore = create((set, get) => ({
       //   console.log('✅ packages parsed:', packages)
         // console.log('✅ rooms parsed:', rooms.packages)
 
+      const roomList = rooms.documents || [];
       set({
         badgesFree: badges.free || [], // ← array of URLs
         badgesVip: badges.vip || [], // ← array of URLs
         colors: colors.allcolors?.[0] || {},
         packages: rooms.packages || [],
         mods: rooms.mymods[0].mod1 || {},
-        rooms:rooms.documents || [],
+        rooms: roomList,
         isLoading: false,
         isInitialized: true,
       });
+      return roomList;
     } catch (error) {
       console.error("App initialization failed:", error);
       set({ error: error.message, isLoading: false, isInitialized: true });
@@ -88,6 +92,7 @@ const useAppStore = create((set, get) => ({
       rooms: [],
       packages: [],
       mods: [],
+      autoJoinOnLogin: false,
       isInitialized: true,
       isLoading: false,
       error: null,
