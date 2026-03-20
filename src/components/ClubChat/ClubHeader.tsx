@@ -25,6 +25,8 @@ interface ClubHeaderProps {
   onChatColor?: () => void;
   onBadges?: () => void;
   onBlockList?: () => void;
+  onHomePress?: () => void;
+  onMembers?: () => void;
   navigation?: any; // ← for navigating to BlockList, etc.
 }
 
@@ -48,6 +50,8 @@ export default function ClubHeader({
   onChatColor,
   onBadges,
   onBlockList,
+  onHomePress,
+  onMembers,
   navigation,
 }: ClubHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -113,7 +117,7 @@ export default function ClubHeader({
         <VIPDrawer
           visible={vipDrawerOpen}
           onClose={() => setVipDrawerOpen(!vipDrawerOpen)}
-          user={{ name: "John Doe", avatar: user.pic, isVip: false }}
+          user={{ name: user.username, avatar: user.pic, isVip: true }}
           onBuyVip={async (planId) => {
             await axios.post(`${ipv4}buyvip`, { planId });
           }}
@@ -127,13 +131,28 @@ export default function ClubHeader({
             <Ionicons name="menu" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.clubInfo}>
+              <TouchableOpacity
+              style={styles.onlineRow}
+              onPress={() => {
+                if (onHomePress) {
+                  onHomePress();
+                } else {
+                  navigation?.navigate("Home");
+                }
+              }}
+            >
             <Text style={styles.clubName} numberOfLines={1}>
               {clubName}
             </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.onlineRow}
               onPress={() => {
-                navigation.navigate("Members");
+                if (onMembers) {
+                  onMembers();
+                } else {
+                  navigation?.navigate("Members");
+                }
               }}
             >
               <View style={styles.onlineDot} />

@@ -130,7 +130,11 @@ const ClubChat: React.FC<ClubChatProps> = ({
     }
 
     // VIP
-    if (item.premium === "vip1" || item.premium === "vip2" || item.premium === "vip3") {
+    if (
+      item.premium === "vip1" ||
+      item.premium === "vip2" ||
+      item.premium === "vip3"
+    ) {
       tags.push({ label: "VIP", bg: "#FFF3CD", color: "#E6A817" });
     }
 
@@ -139,8 +143,7 @@ const ClubChat: React.FC<ClubChatProps> = ({
 
   // ── Render message ───────────────────────────────────
   const renderItem = ({ item }: { item: any }) => {
-
-  // console.log('👤 message item:', JSON.stringify(item, null, 2))
+    // console.log('👤 message item:', JSON.stringify(item, null, 2))
     const isMe = item.user_id === currentUserEmail;
     const nameColor = item.usernamecolor || "#555";
     const chatColor = item.chatcolor || "#333";
@@ -174,8 +177,20 @@ const ClubChat: React.FC<ClubChatProps> = ({
         <View style={styles.messageContent}>
           <View style={styles.nameRow}>
             <Text style={[styles.userName, { color: nameColor }]}>
-              {isMe ? "You" : item.username || item.user_id}
+              {item.username || item.user_id}
             </Text>
+            {(item.premium === "vip1" ||
+              item.premium === "vip2" ||
+              item.premium === "vip3") && (
+              <View style={styles.vip}>
+                <Image
+                  source={{
+                    uri: "https://cdn-icons-png.flaticon.com/512/9195/9195920.png",
+                  }}
+                  style={{ width: 16, height: 16, marginLeft: 0 }}
+                />
+              </View>
+            )}
             {tags.map((tag, i) => (
               <View
                 key={i}
@@ -299,7 +314,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#aaa",
   },
-
+  vip: {
+    flexDirection: "row",
+  },
   // ── Status banners ───────────────────────────────
   statusBanner: {
     backgroundColor: "#ffebee",
@@ -364,15 +381,20 @@ const styles = StyleSheet.create({
   badgeImg: {
     position: "absolute",
     bottom: -2,
-    right: -4,
-    width: 18,
-    height: 18,
+    right: -8,
+    width: 21,
+    height: 21,
     borderRadius: 9,
-    backgroundColor: "#fff",
+    // backgroundColor: "#fff",
   },
   messageContent: { flex: 1, gap: 3 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  userName: { fontSize: 13, fontWeight: "700" },
+  userName: {
+    fontSize: 13,
+    fontWeight: "800", // ← bold
+    letterSpacing: 0.1,
+    flexShrink: 1,
+  },
   vipPill: {
     backgroundColor: "#FFF3CD",
     paddingHorizontal: 6,
@@ -386,7 +408,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   timeText: { fontSize: 10, color: "#bbb", marginLeft: "auto" },
-  messageText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  messageText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700",
+    letterSpacing: 0.1,
+  },
 
   // ── Typing ───────────────────────────────────────
   typingRow: {

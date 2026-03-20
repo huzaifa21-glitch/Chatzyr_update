@@ -209,4 +209,36 @@
     "username": "UZI",
     "usernamecolor": "#FFFE13"
   }
-]
+],
+  {
+    "_id": "6542ae189c93ac9c1afdfbb2",
+    "id": "1",
+    "title": "GOLD",
+    "image": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/gold-removebg-preview.png",
+    "type": "vip2",
+    "packages": [
+      { "_id": "6542ae189c93ac9c1afdfbb3", "options": "Colors Profile username" },
+      { "_id": "6542ae189c93ac9c1afdfbb4", "options": "Color Text Username" },
+      { "_id": "6542ae189c93ac9c1afdfbb5", "options": "Color Chat Text" },
+      { "_id": "6542ae189c93ac9c1afdfbb6", "options": "VIP Badge" }
+    ],
+    "Price": [
+      { "_id": "6542ae189c93ac9c1afdfbb7", "duration": "1 Month", "price": "1400" },
+      { "_id": "6542ae189c93ac9c1afdfbb8", "duration": "3 Months", "price": "4000" },
+      { "_id": "6542ae189c93ac9c1afdfbb9", "duration": "6 Months", "price": "7000" },
+      { "_id": "6542ae189c93ac9c1afdfbba", "duration": "1 Year", "price": "14000" }
+    ],
+    "__v": 0
+  },
+  {
+    "_id": "654fd89a3ad727b75a7957b3",
+    "id": "#FF0000",
+    "title": "RED HEEL - Classic",
+    "image": "https://raw.githubusercontent.com/chatzyr/chatzyr_images/main/Picsart_24-01-11_01-14-13-352-removebg-preview.png",
+    "type": "badge",
+    "packages": [
+      { "_id": "6542ae189c93ac9c1afdfbb6", "options": "NEW BEST COLOR" }
+    ],
+    "Price": [
+      { "_id": "6542ae189c93ac9c1afdfbb7", "duration": "1 Month", "price": "8" }
+    ],

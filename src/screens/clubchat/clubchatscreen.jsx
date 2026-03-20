@@ -22,7 +22,12 @@ export default function ClubChatScreen({ navigation, route }) {
   const [sheet, setSheet] = useState(null)
 
   // ── Socket hook ────────────────────────────────
-  const { sendMessage, startTyping, stopTyping } = useSocket(roomId)
+  const { sendMessage, startTyping, stopTyping, disconnect } = useSocket(roomId)
+
+  const handleHomePress = () => {
+    disconnect();
+    navigation.navigate("Home");
+  };
 
   // ── Chat state from Zustand ────────────────────
   const messages = useChatStore((state) => state.messages)
@@ -56,6 +61,7 @@ export default function ClubChatScreen({ navigation, route }) {
         onBadges={() => setSheet("badge")}
         onBlockList={() => navigation.navigate("BlockList")}
         onMembers={() => navigation.navigate("Members", { onlineUsers })}
+        onHomePress={handleHomePress}
         navigation={navigation}
         clubName={club.name}
         members={onlineUsers.length}        // ← live count from socket

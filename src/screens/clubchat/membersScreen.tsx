@@ -51,7 +51,7 @@ export default function MembersScreen({ navigation, route }: any) {
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.8}
-        onPress={() => navigation?.navigate("UserProfile", { user: item })}
+        onPress={() => navigation?.navigate("UserProfile", { userEmail: item.email })}
       >
         {/* Avatar with optional VIP ring */}
         <View style={[styles.avatarWrapper, ringColor && { borderColor: ringColor }]}>
