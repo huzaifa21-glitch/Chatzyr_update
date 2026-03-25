@@ -15,37 +15,28 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuthStore from '../../../store/useAuthStore'
 import useChatStore from '../../../store/useChatStore'
+import { getTag,getPremiumColor,getTagBackgroundColor,getTagTextColor } from '../../utils/formatter'
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3  // 3 columns
-
-
-
-const getPremiumColor = (premium: string) => {
-  if (premium === 'vip2' || premium === 'vip1') return '#E6A817'  // ← warm rich gold for both
-  return null
-}
 
 export default function MembersScreen({ navigation, route }: any) {
   const [search, setSearch] = useState("") 
   const onlineUsers = useChatStore((state) => state.onlineUsers)
   //  console.log(onlineUsers);
-   
-
-  // Replace MOCK_MEMBERS with your real members from socket/props
   const members = onlineUsers 
 
   const filtered = members.filter((m: { username: string; }) =>
     m.username.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Sort: vip2 first, then vip1, then free
   const sorted = [...filtered].sort((a, b) => {
-    const order: any = { vip2: 0, vip1: 1, free: 2 }
+    const order: any = { vip3: 0, vip2: 1, vip1:2, free: 3 }
     return (order[a.premium] ?? 2) - (order[b.premium] ?? 2)
   })
 
   const renderMember = ({ item }: any) => {
     const ringColor = getPremiumColor(item.premium)
+    const userTag = getTag(item)
 
     return (
       <TouchableOpacity
@@ -65,14 +56,12 @@ export default function MembersScreen({ navigation, route }: any) {
           {item.username}
         </Text>
 
-        {/* VIP tag */}
-        {(item.premium === 'vip1' || item.premium === 'vip2') && (
-          <View style={[styles.vipTag, { backgroundColor: ringColor + '22' }]}>
-           <Text style={[styles.vipText, { color: ringColor ?? '#E6A817' }]}>
-              VIP
-            </Text>
-          </View>
-        )}
+        {/* User Tag */}
+        <View style={[styles.userTag, { backgroundColor: getTagBackgroundColor(userTag) }]}>
+          <Text style={[styles.userTagText, { color: getTagTextColor(userTag) }]}>
+            {userTag}
+          </Text>
+        </View>
       </TouchableOpacity>
     )
   }
@@ -201,11 +190,11 @@ const styles = StyleSheet.create({
     color: "#111", textAlign: "center",
     paddingHorizontal: 4, marginBottom: 4,
   },
-  vipTag: {
+  userTag: {
     paddingHorizontal: 8, paddingVertical: 2,
     borderRadius: 20,
   },
-  vipText: {
+  userTagText: {
     fontSize: 9, fontWeight: "800", letterSpacing: 0.5,
   },
 

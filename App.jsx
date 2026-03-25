@@ -1,4 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen'
+import {
+  useFonts,
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+} from '@expo-google-fonts/nunito'
 import {
   ScrollView,
   StatusBar,
@@ -14,7 +22,7 @@ import useAuthStore from './store/useAuthStore';
 // import 'expo-router/entry';
 import Toast from 'react-native-toast-message';
 import Loader from './src/components/Loader/Loader';
-
+// SplashScreen.preventAutoHideAsync()
 
 export default function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -24,27 +32,39 @@ export default function App() {
   const isInitialized = useAppStore((state) => state.isInitialized)
   const isLoading = useAppStore((state) => state.isLoading)
   const error = useAppStore((state) => state.error)
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+  })
 
   useEffect(() => {
-  const bootstrap = async () => {
-    try {
-      const { token, userEmail } = await loadAuth()
-      // console.log('🔑 bootstrap token:', token)
-      // console.log('📧 bootstrap email:', userEmail)
-      if (token && userEmail) {
-        setAutoJoinOnLogin(true)
+    const bootstrap = async () => {
+      try {
+        const { token, userEmail } = await loadAuth()
+        // console.log('🔑 bootstrap token:', token)
+        // console.log('📧 bootstrap email:', userEmail)
+        if (token && userEmail) {
+          setAutoJoinOnLogin(true)
+        }
+        await initializeApp(token, userEmail)
+      } catch (e) {
+        console.error('bootstrap failed:', e)
+        // even if it fails, dont leave user on white screen
+        useAppStore.setState({ isInitialized: true, isLoading: false })
       }
-      await initializeApp(token, userEmail)
-    } catch(e) {
-      console.error('bootstrap failed:', e)
-      // even if it fails, dont leave user on white screen
-      useAppStore.setState({ isInitialized: true, isLoading: false })
     }
-  }
-  bootstrap()
-}, [])
+    bootstrap()
+  }, [])
 
-  if (isLoading || !isInitialized) {
+  useEffect(() => {
+  if (fontsLoaded && isInitialized) {
+    SplashScreen.hideAsync()
+  }
+}, [fontsLoaded, isInitialized])
+
+  if (!fontsLoaded || isLoading || !isInitialized) {
     return (
       <View>
         <Loader visible={isLoading} size='medium' message='loading...' overlay={true}></Loader>
@@ -62,8 +82,8 @@ export default function App() {
 
   return (
     <Wrapper paddingHorizontal={0} paddingVertical={0}>
-      <StatusBar 
-        barStyle="dark-content" 
+      <StatusBar
+        barStyle="dark-content"
         backgroundColor="#f5f5f5"
         translucent={false}  // ← ADD this
       />

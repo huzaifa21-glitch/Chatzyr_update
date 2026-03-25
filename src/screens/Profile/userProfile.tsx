@@ -197,7 +197,7 @@ export default function UserProfileScreen({ navigation, route }: any) {
         <View style={styles.statsRow}>
           {/* Likes */}
           <View style={styles.statItem}>
-            <Ionicons name="heart" size={20} color="#D32F2F" />
+            <Ionicons name="people" size={20} color="#D32F2F" />
             <Text style={styles.statValue}>{user.likes || 0}</Text>
             <Text style={styles.statLabel}>Followers</Text>
           </View>
@@ -274,7 +274,7 @@ export default function UserProfileScreen({ navigation, route }: any) {
             onPress={() => setFollowing(!following)}
           >
             <Ionicons
-              name={following ? "people" : "people-outline"}
+              name={following ? "people" : "person-add-outline"}
               size={22}
               color={following ? "#D32F2F" : "#222"}
             />
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
 
   // ── Badge center ─────────────────────────────────────
   badgeCenter: { alignItems: "center", paddingHorizontal: 20, gap: 4 },
-  badgeLarge: { width: 44, height: 44 },
+  badgeLarge: { width: 50, height: 50 },
   badgePlaceholder: {
     width: 44,
     height: 44,

@@ -67,6 +67,8 @@ const useAppStore = create((set, get) => ({
         // console.log('✅ rooms parsed:', rooms.packages)
 
       const roomList = rooms.documents || [];
+      // console.log(roomList);
+      
       set({
         badgesFree: badges.free || [], // ← array of URLs
         badgesVip: badges.vip || [], // ← array of URLs

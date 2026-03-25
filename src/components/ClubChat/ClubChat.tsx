@@ -10,11 +10,12 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
+import * as Linking from "expo-linking";
 import { Ionicons } from "@expo/vector-icons";
 import InputBar from "./InputBar";
 import useChatStore from "../../../store/useChatStore";
 import useAppStore from "../../../store/useAppStore";
-
+import { chatGetTag, formatTime } from "../../utils/formatter";
 type ClubChatProps = {
   room?: any;
   messages: any[];
@@ -28,18 +29,36 @@ type ClubChatProps = {
   onStopTyping: () => void;
   navigation?: any;
 };
+const URL_REGEX = /((https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}([^\s]*))/g;
+const URL_TEST_REGEX = /^((https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}([^\s]*))$/;
 
-const formatTime = (isoString: string) => {
-  try {
-    return new Date(isoString).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
+
+
+
+const renderMessageText = (text: string, color: string) => {
+  const parts = text.split(URL_REGEX);
+
+  return (
+    <Text style={[styles.messageText, { color }]}>
+      {parts.map((part, i) => {
+        if (URL_TEST_REGEX.test(part)) {
+          const url = part.startsWith("http") ? part : `https://${part}`;
+
+          return (
+            <Text
+              key={i}
+              style={styles.linkText}
+              onPress={() => Linking.openURL(url)}
+            >
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={i}>{part}</Text>;
+      })}
+    </Text>
+  );
 };
-
 const ClubChat: React.FC<ClubChatProps> = ({
   room,
   messages,
@@ -61,6 +80,7 @@ const ClubChat: React.FC<ClubChatProps> = ({
   const loadMore = useChatStore((state) => state.loadMore);
   const hasMore = useChatStore((state) => state.hasMore);
   const mods = useAppStore((state) => state.mods);
+  const prevLastMessageRef = useRef<any>(null);
 
   // ── Scroll to bottom ONCE when messages first load ───
   useEffect(() => {
@@ -74,15 +94,21 @@ const ClubChat: React.FC<ClubChatProps> = ({
   }, [messages.length, isConnected]);
 
   // ── Scroll to bottom on new message ─────────────────
-  const prevLengthRef = useRef(0);
+
   useEffect(() => {
-    if (messages.length > prevLengthRef.current && initialScrollDone) {
+    if (!initialScrollDone || messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    // If last message changed → new message came → scroll
+    if (prevLastMessageRef.current !== lastMessage) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-    prevLengthRef.current = messages.length;
-  }, [messages.length]);
+
+    prevLastMessageRef.current = lastMessage;
+  }, [messages]);
 
   // ── Load more on scroll to top ───────────────────────
   const handleLoadMore = async () => {
@@ -115,39 +141,14 @@ const ClubChat: React.FC<ClubChatProps> = ({
     }
   };
 
-  const getTag = (item: any) => {
-    const email = item.user_id;
-    const tags = [];
-
-    // Owner
-    if (email === "Leohax@gmail.com") {
-      tags.push({ label: "Owner", bg: "#D32F2F", color: "#fff" });
-    }
-
-    // Mod — just check if email exists in flat array
-    if (mods?.includes(email)) {
-      tags.push({ label: "Mod", bg: "#1565C0", color: "#fff" });
-    }
-
-    // VIP
-    if (
-      item.premium === "vip1" ||
-      item.premium === "vip2" ||
-      item.premium === "vip3"
-    ) {
-      tags.push({ label: "VIP", bg: "#FFF3CD", color: "#E6A817" });
-    }
-
-    return tags;
-  };
-
+ 
   // ── Render message ───────────────────────────────────
   const renderItem = ({ item }: { item: any }) => {
     // console.log('👤 message item:', JSON.stringify(item, null, 2))
     const isMe = item.user_id === currentUserEmail;
     const nameColor = item.usernamecolor || "#555";
     const chatColor = item.chatcolor || "#333";
-    const tags = getTag(item);
+    const tags = chatGetTag(item,mods);
     return (
       <View style={styles.messageRow}>
         <TouchableOpacity
@@ -203,9 +204,7 @@ const ClubChat: React.FC<ClubChatProps> = ({
             ))}
             <Text style={styles.timeText}>{formatTime(item.time)}</Text>
           </View>
-          <Text style={[styles.messageText, { color: chatColor }]}>
-            {item.content}
-          </Text>
+          {renderMessageText(item.content, chatColor)}
         </View>
       </View>
     );
@@ -305,6 +304,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     gap: 12,
   },
+  linkText: {
+    color: "#1565C0",
+    textDecorationLine: "underline",
+    fontFamily: "Nunito_600SemiBold",
+  },
   loaderText: {
     fontSize: 16,
     fontWeight: "700",
@@ -391,7 +395,7 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   userName: {
     fontSize: 13,
-    fontWeight: "800", // ← bold
+    fontFamily: "Nunito_800ExtraBold", // ← replaces fontWeight: 800
     letterSpacing: 0.1,
     flexShrink: 1,
   },
@@ -409,10 +413,9 @@ const styles = StyleSheet.create({
   },
   timeText: { fontSize: 10, color: "#bbb", marginLeft: "auto" },
   messageText: {
-    flex: 1,
     fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "700",
+    lineHeight: 21,
+    fontFamily: "Nunito_800ExtraBold", // ← readable weight for colored text
     letterSpacing: 0.1,
   },
 
@@ -422,7 +425,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: "#f5f5f5",
   },
-  typingText: { fontSize: 12, color: "#888", fontStyle: "italic" },
+  typingText: {
+    fontSize: 12,
+    color: "#aaa",
+    fontStyle: "italic",
+    fontFamily: "Nunito_400Regular",
+  },
 
   // ── Empty ────────────────────────────────────────
   emptyState: { alignItems: "center", marginTop: 60 },

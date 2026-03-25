@@ -8,62 +8,21 @@ import {
     Image,
     StyleSheet,
     StatusBar,
+    Modal,
+    Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AppDrawer from "../../../Drawer/AppDrawer";
 import useAuthStore from '../../../store/useAuthStore'
 import useAppStore from '../../../store/useAppStore'
-// const CLUBS = [
-//     {
-//         id: "1",
-//         name: "General Chat Room",
-//         members: 8,
-//         maxMembers: 35,
-//         image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=80",
-//     },
-//     {
-//         id: "2",
-//         name: "USA (Live)",
-//         members: 3,
-//         maxMembers: 35,
-//         image: "https://minutemirror.com.pk/wp-content/uploads/2024/11/statue-liberty-usa.jpg",
-//     },
-//     {
-//         id: "3",
-//         name: "Pakistani Club",
-//         members: 20,
-//         maxMembers: 35,
-//         image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80",
-//     },
-//     {
-//         id: "4",
-//         name: "Music Club",
-//         members: 25,
-//         maxMembers: 35,
-//         image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80",
-//     },
-//     {
-//         id: "5",
-//         name: "Tech Talks",
-//         members: 12,
-//         maxMembers: 35,
-//         image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80",
-//     },
-//     {
-//         id: "6",
-//         name: "Sports Arena",
-//         members: 35,
-//         maxMembers: 35,
-//         image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80",
-//     },
-// ];
+import { getTag } from "../../utils/formatter";
 
 export default function ClubsScreen({ navigation }) {
     const clearAuth = useAuthStore((state) => state.clearAuth)
     const resetApp = useAppStore((state) => state.resetApp)
-    const CLUBS = useAppStore((state) => state.rooms); 
+    const CLUBS = useAppStore((state) => state.rooms);
     // console.log(CLUBS);
-    
+
     const user = useAuthStore((state) => state.user)
     const [search, setSearch] = useState("");
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -74,6 +33,37 @@ export default function ClubsScreen({ navigation }) {
     const filtered = CLUBS.filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase())
     );
+    const [passwordModal, setPasswordModal] = useState(false)
+    const [passwordInput, setPasswordInput] = useState('')
+    const [selectedRoom, setSelectedRoom] = useState(null)
+    const [passwordError, setPasswordError] = useState('')
+
+
+    const handleRoomPress = (item) => {
+        if (!item.public && item.password) {
+            // ← locked room — show password modal
+            setSelectedRoom(item)
+            setPasswordInput('')
+            setPasswordError('')
+            setPasswordModal(true)
+        } else {
+            // ← public room — go straight in
+            navigation?.navigate("ClubChat", { room: item })
+        }
+    }
+
+    // ── Verify password ───────────────────────────
+    const handlePasswordSubmit = () => {
+        if (passwordInput.trim() === selectedRoom?.password) {
+            setPasswordModal(false)
+            setPasswordInput('')
+            setPasswordError('')
+            navigation?.navigate("ClubChat", { room: selectedRoom })
+        } else {
+            setPasswordError('Incorrect password. Try again.')
+        }
+    }
+
 
     // One-time auto join after fresh login sign-in
     React.useEffect(() => {
@@ -98,46 +88,51 @@ export default function ClubsScreen({ navigation }) {
         resetApp()         // clears badges, colors, packages
         // ✅ token becomes null → AppNavigator auto-switches to Login stack
     }
-    const getTag = (user) => {
-        if (user?.email?.toLowerCase() === 'leohax@gmail.com') return 'Admin'
-        if (user?.premium === 'vip1' || user?.premium === 'vip2') return 'VIP Member'
-        return 'Member'
-    }
 
-    const renderClub = ({ item }) => (
-        <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.85}
-            onPress={() => navigation?.navigate("ClubChat", { room: item })}
-        >
-            <Image source={{ uri: item.badgeurl }} style={styles.cardImage} />
-            <View style={styles.cardContent}>
-                <Text style={styles.clubName}>{item.name}</Text>
-                <Text style={styles.membersText}>
-                    Members: {item.onlineCount}/{100}
-                </Text>
 
-                {/* Member count bar */}
-                <View style={styles.progressBarBg}>
-                    <View
-                        style={[
-                            styles.progressBarFill,
-                            { width: `${(item.onlineCount / 100) * 100}%` },
-                        ]}
+    const renderClub = ({ item }) => {
+        const isLocked = !item.public && item.password
+
+        return (
+            <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.85}
+                onPress={() => handleRoomPress(item)}  // ← use handleRoomPress
+            >
+                <Image source={{ uri: item.badgeurl }} style={styles.cardImage} />
+                <View style={styles.cardContent}>
+                    <View style={styles.clubNameRow}>
+                        <Text style={styles.clubName}>{item.name}</Text>
+                        {/* {isLocked && (
+                            <Ionicons name="lock-closed" size={14} color="#D32F2F" style={{ marginLeft: 6 }} />
+                        )} */}
+                    </View>
+                    <Text style={styles.membersText}>
+                        Members: {item.onlineCount}/{100}
+                    </Text>
+                    <View style={styles.progressBarBg}>
+                        <View
+                            style={[
+                                styles.progressBarFill,
+                                { width: `${Math.min((item.onlineCount / 100) * 100, 100)}%` },
+                            ]}
+                        />
+                    </View>
+                </View>
+                <View style={styles.arrowButton}>
+                    <Ionicons
+                        name={isLocked ? "lock-closed" : "arrow-forward"}  // ← lock icon for locked rooms
+                        size={18}
+                        color="#D32F2F"
                     />
                 </View>
-            </View>
-
-            {/* Arrow */}
-            <View style={styles.arrowButton}>
-                <Ionicons name="arrow-forward" size={18} color="#D32F2F" />
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        )
+    }
 
     return (
         <>
-         
+
             <AppDrawer
                 visible={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
@@ -146,7 +141,7 @@ export default function ClubsScreen({ navigation }) {
                 user={{
                     name: user?.username || 'User',   // ← from your login response
                     avatar: user?.pic,                // ← profile picture
-                   tag: getTag(user),      // ← vip2, etc.
+                    tag: getTag(user),      // ← vip2, etc.
                 }}
                 onLogout={handleLogout}
             />
@@ -201,6 +196,73 @@ export default function ClubsScreen({ navigation }) {
                     </View>
                 }
             />
+            <Modal
+                visible={passwordModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setPasswordModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setPasswordModal(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalCard}
+                        activeOpacity={1}
+                        onPress={() => { }}  // ← prevent close when tapping inside
+                    >
+                        {/* Lock icon */}
+                        <View style={styles.modalIconWrapper}>
+                            <Ionicons name="lock-closed" size={28} color="#D32F2F" />
+                        </View>
+
+                        <Text style={styles.modalTitle}>{selectedRoom?.name}</Text>
+                        <Text style={styles.modalSubtitle}>
+                            This room is private. Enter the password to join.
+                        </Text>
+
+                        {/* Password input */}
+                        <View style={styles.modalInputWrapper}>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Enter password..."
+                                placeholderTextColor="#bbb"
+                                value={passwordInput}
+                                onChangeText={(t) => {
+                                    setPasswordInput(t)
+                                    setPasswordError('')
+                                }}
+                                secureTextEntry
+                                autoFocus
+                            />
+                        </View>
+
+                        {/* Error */}
+                        {passwordError ? (
+                            <Text style={styles.errorText}>{passwordError}</Text>
+                        ) : null}
+
+                        {/* Buttons */}
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => setPasswordModal(false)}
+                            >
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.joinBtn}
+                                onPress={handlePasswordSubmit}
+                            >
+                                <Text style={styles.joinBtnText}>Join</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+
         </>
     );
 }
@@ -349,5 +411,87 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 15,
         color: "#bbb",
+    },
+    // ── Club name row ────────────────────────────────
+    clubNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+
+    // ── Modal ────────────────────────────────────────
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalIconWrapper: {
+        width: 64, height: 64, borderRadius: 32,
+        backgroundColor: '#fff5f5',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 18, fontWeight: '800',
+        color: '#111', marginBottom: 8, textAlign: 'center',
+    },
+    modalSubtitle: {
+        fontSize: 13, color: '#888',
+        textAlign: 'center', marginBottom: 20,
+        lineHeight: 20,
+    },
+    modalInputWrapper: {
+        width: '100%',
+        borderWidth: 1.5, borderColor: '#eee',
+        borderRadius: 50, height: 52,
+        paddingHorizontal: 20,
+        justifyContent: 'center',
+        marginBottom: 8,
+        backgroundColor: '#fafafa',
+    },
+    modalInput: {
+        fontSize: 15, color: '#111',
+    },
+    errorText: {
+        fontSize: 12, color: '#D32F2F',
+        marginBottom: 12, alignSelf: 'flex-start',
+        marginLeft: 8,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12, marginTop: 16, width: '100%',
+    },
+    cancelBtn: {
+        flex: 1, height: 52, borderRadius: 14,
+        borderWidth: 1.5, borderColor: '#eee',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    cancelBtnText: {
+        fontSize: 15, fontWeight: '700', color: '#888',
+    },
+    joinBtn: {
+        flex: 1, height: 52, borderRadius: 14,
+        backgroundColor: '#D32F2F',
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#D32F2F',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+    },
+    joinBtnText: {
+        fontSize: 15, fontWeight: '700', color: '#fff',
     },
 });

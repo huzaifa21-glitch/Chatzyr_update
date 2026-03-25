@@ -45,12 +45,15 @@ export default function ClubChatScreen({ navigation, route }) {
     return () => deactivateKeepAwake()
   }, [])
 
-  // ── Build playlist from room data ──────────────
-  const playlist = (club?.videourl || []).map((url, i) => ({
-    id: String(i),
-    title: `${club.name} — Stream ${i + 1}`,
-    url,
-  }))
+  // ── Build playlist from room data (newest first) ──────────────
+  const playlist = (club?.videourl || [])
+    .slice() // avoid mutating data from route params
+    .reverse() // show last stream first
+    .map((url, i) => ({
+      id: String(i),
+      title: `${club.name} — Stream ${i + 1}`,
+      url,
+    }))
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
