@@ -28,12 +28,13 @@ interface ClubHeaderProps {
   onHomePress?: () => void;
   onMembers?: () => void;
   navigation?: any; // ← for navigating to BlockList, etc.
+  mod: boolean; // ← is current user a mod? Show extra options if true
 }
 
 // ─── Menu Items ──────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
-  { key: "edit", label: "Edit Club", icon: "create-outline" },
-  { key: "color", label: "Name/Chat Color", icon: "color-palette-outline" },
+  { key: "edit", label: "Club Info", icon: "information-circle-outline" },
+  { key: "color", label: "Profile", icon: "person-outline" },
   { key: "badges", label: "Badges", icon: "ribbon-outline" },
   { key: "blocklist", label: "Block List", icon: "ban-outline" },
 ];
@@ -42,7 +43,7 @@ const MENU_ITEMS = [
 export default function ClubHeader({
   clubName = "General Chat Room",
   members = 9,
-  maxMembers = 35,
+  maxMembers = 100,
   onMenuPress,
   onNotificationPress,
   onInboxPress,
@@ -53,6 +54,7 @@ export default function ClubHeader({
   onHomePress,
   onMembers,
   navigation,
+  mod,
 }: ClubHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;

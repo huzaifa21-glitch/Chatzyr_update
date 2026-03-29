@@ -11,7 +11,9 @@ import {
 import Toast from "react-native-toast-message";
 import useAppStore from "../../../store/useAppStore";
 import useAuthStore from "../../../store/useAuthStore";
+import useChatStore from "../../../store/useChatStore";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ipv4 } from "../../utils/config";
 export default function BadgeUpdateSheet({
   onSave,
 }: {
@@ -20,22 +22,52 @@ export default function BadgeUpdateSheet({
   const badgesFree = useAppStore((state) => state.badgesFree) ?? [];
   const badgesVip = useAppStore((state) => state.badgesVip) ?? [];
   const user = useAuthStore((state) => state.user);
-
+  const token = useAuthStore((state) => state.token);
   const [selected, setSelected] = useState<string>(user?.badge || "");
   const [loading, setLoading] = useState(false);
-
-  const isVipUser = user?.premium === "vip1" || user?.premium === "vip2"; // ← check if user is vip
+  const saveAuth = useAuthStore((state) => state.saveAuth); // ← update local user
+  const socket = useChatStore((state) => state.socket);
+  const isVipUser = user?.premium === "vip1" || user?.premium === "vip2" || user?.premium === "vip3" || user?.premium === "vip4"; // ← check if user is vip
 
   const handleSave = async () => {
     if (selected === user?.badge) return;
     setLoading(true);
     try {
-      await onSave?.(selected);
-      Toast.show({
-        type: "success",
-        text1: "Badge Updated!",
-        text2: "Your badge is now live.",
+      // 1. Save to DB
+      const res = await fetch(`${ipv4}user/update/badge`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify({
+          email: user?.email,
+          badge: selected,
+        }),
       });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // 2. Update local Zustand user
+        await saveAuth(token, data.user);
+
+        // 3. Broadcast to everyone in room live
+        socket?.emit("user_updated", { email: user?.email });
+
+        Toast.show({
+          type: "success",
+          text1: "Badge Updated!",
+          text2: "Your badge is now live.",
+        });
+        onSave?.(selected);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: data.message || "Update failed",
+        });
+      }
     } catch {
       Toast.show({
         type: "error",

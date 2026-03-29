@@ -4,6 +4,8 @@ import { io, Socket } from "socket.io-client";
 import { ipv4 } from "../src/utils/config";
 import useAuthStore from "../store/useAuthStore";
 import useChatStore from "../store/useChatStore";
+import useAppStore from "../store/useAppStore";
+import updateUserInMessages from "../store/useChatStore";
 
 export default function useSocket(roomId: string) {
   const socketRef = useRef<Socket | null>(null);
@@ -11,19 +13,31 @@ export default function useSocket(roomId: string) {
   const appState = useRef(AppState.currentState);
   const isConnectingRef = useRef(false);
   const hasConnectedRef = useRef(false);
-  const isBackgroundedRef = useRef(false);   // ← NEW
-
+  const isBackgroundedRef = useRef(false); // ← NEW
+  const updateRoom = useAppStore((state) => state.updateRoom);
+  const updateUserInMessages = useChatStore(
+    (state) => state.updateUserInMessages,
+  );
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const email = user?.email;
 
   const {
-    setSocket, setConnected, setConnecting,
-    setMessages, addMessage, setOnlineUsers,
-    addOnlineUser, removeOnlineUser,
-    addTypingUser, removeTypingUser,
-    setCurrentRoom, resetChat,
+    setSocket,
+    setConnected,
+    setConnecting,
+    setMessages,
+    addMessage,
+    setOnlineUsers,
+    addOnlineUser,
+    removeOnlineUser,
+    addTypingUser,
+    removeTypingUser,
+    setCurrentRoom,
+    resetChat,
   } = useChatStore();
+
+  const isConnecting = useChatStore((state) => state.isConnecting);
 
   const connect = useCallback(() => {
     if (socketRef.current?.connected) return;
@@ -33,7 +47,7 @@ export default function useSocket(roomId: string) {
     isConnectingRef.current = true;
     hasConnectedRef.current = true;
 
-    console.log('🔌 Connecting socket...')
+    console.log("🔌 Connecting socket...");
 
     const socket = io(ipv4.replace(/\/$/, ""), {
       transports: ["websocket"],
@@ -45,7 +59,7 @@ export default function useSocket(roomId: string) {
     setSocket(socket);
 
     socket.once("connect", () => {
-      console.log('🟢 Socket connected:', socket.id)
+      console.log("🟢 Socket connected:", socket.id);
       isConnectingRef.current = false;
       setConnected(true);
       setConnecting(false);
@@ -62,8 +76,8 @@ export default function useSocket(roomId: string) {
       if (reason !== "io client disconnect" && !isBackgroundedRef.current) {
         reconnectTimer.current = setTimeout(() => {
           console.log("🔄 Attempting reconnect...");
-          hasConnectedRef.current = false  // ← reset guard
-          isConnectingRef.current = false
+          hasConnectedRef.current = false; // ← reset guard
+          isConnectingRef.current = false;
           connect();
         }, 3000);
       }
@@ -72,7 +86,7 @@ export default function useSocket(roomId: string) {
     socket.on("connect_error", (err) => {
       console.log("❌ Connection error:", err.message);
       isConnectingRef.current = false;
-      hasConnectedRef.current = false;  // ← reset so retry works
+      hasConnectedRef.current = false; // ← reset so retry works
       setConnecting(false);
       setConnected(false);
 
@@ -80,6 +94,15 @@ export default function useSocket(roomId: string) {
         console.log("🔄 Retrying connection...");
         connect();
       }, 3000);
+    });
+    socket.on("room_details_updated", (updatedRoom) => {
+      updateRoom(updatedRoom);
+    });
+
+    socket.on("user_profile_updated", (updatedUser: any) => {
+      console.log("👤 User profile updated:", updatedUser.email);
+      // Update messages in store so chat reflects new username/color live
+      updateUserInMessages(updatedUser);
     });
 
     socket.on("message_history", (messages: any[]) => {
@@ -91,15 +114,23 @@ export default function useSocket(roomId: string) {
     socket.on("online_users", (users: any[]) => setOnlineUsers(users));
     socket.on("online_users_updated", (users: any[]) => setOnlineUsers(users));
     socket.on("user_joined", (user: any) => addOnlineUser(user));
-    socket.on("user_left", ({ email }: { email: string }) => removeOnlineUser(email));
-    socket.on("user_typing", ({ email }: { email: string }) => addTypingUser(email));
-    socket.on("user_stop_typing", ({ email }: { email: string }) => removeTypingUser(email));
+    socket.on("user_left", ({ email }: { email: string }) =>
+      removeOnlineUser(email),
+    );
+    socket.on("user_typing", ({ email }: { email: string }) =>
+      addTypingUser(email),
+    );
+    socket.on("user_stop_typing", ({ email }: { email: string }) =>
+      removeTypingUser(email),
+    );
     socket.on("you_were_muted", () => console.log("🔇 You were muted"));
-    socket.on("you_were_blocked", () => { console.log("🚫 Blocked"); disconnect(); });
+    socket.on("you_were_blocked", () => {
+      console.log("🚫 Blocked");
+      disconnect();
+    });
     socket.on("blocked", ({ message }: any) => console.log("🚫", message));
     socket.on("muted", ({ message }: any) => console.log("🔇", message));
     socket.on("error", ({ message }: any) => console.log("❌", message));
-
   }, [roomId, email, token]);
 
   const disconnect = useCallback(() => {
@@ -116,10 +147,14 @@ export default function useSocket(roomId: string) {
     resetChat();
   }, [roomId, email]);
 
-  const sendMessage = useCallback((content: string) => {
-    if (!socketRef.current?.connected || !content.trim()) return;
-    socketRef.current.emit("send_message", { roomId, email, content });
-  }, [roomId, email]);
+  const sendMessage = useCallback(
+    (content: string) => {
+      if (!socketRef.current?.connected || isConnecting || !content.trim())
+        return;
+      socketRef.current.emit("send_message", { roomId, email, content });
+    },
+    [roomId, email, isConnecting],
+  );
 
   const startTyping = useCallback(() => {
     socketRef.current?.emit("typing_start", { roomId, email });
@@ -131,44 +166,49 @@ export default function useSocket(roomId: string) {
 
   // ── App State ────────────────────────────────────
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        if (
+          appState.current.match(/inactive|background/) &&
+          nextState === "active"
+        ) {
+          console.log("📱 App foregrounded — reconnecting...");
+          isBackgroundedRef.current = false; // ← clear flag
 
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
-        console.log("📱 App foregrounded — reconnecting...");
-        isBackgroundedRef.current = false   // ← clear flag
+          // Reset guards so connect can run
+          hasConnectedRef.current = false;
+          isConnectingRef.current = false;
 
-        // Reset guards so connect can run
-        hasConnectedRef.current = false
-        isConnectingRef.current = false
+          // Wait for network to stabilize
+          setTimeout(() => {
+            if (!socketRef.current?.connected) {
+              connect();
+            }
+          }, 1000);
+        }
 
-        // Wait for network to stabilize
-        setTimeout(() => {
-          if (!socketRef.current?.connected) {
-            connect()
+        if (nextState.match(/inactive|background/)) {
+          console.log("📱 App backgrounded — disconnecting...");
+          isBackgroundedRef.current = true; // ← set flag
+
+          // Cancel pending reconnect
+          if (reconnectTimer.current) {
+            clearTimeout(reconnectTimer.current);
+            reconnectTimer.current = null;
           }
-        }, 1000)
-      }
 
-      if (nextState.match(/inactive|background/)) {
-        console.log("📱 App backgrounded — disconnecting...");
-        isBackgroundedRef.current = true    // ← set flag
-
-        // Cancel pending reconnect
-        if (reconnectTimer.current) {
-          clearTimeout(reconnectTimer.current)
-          reconnectTimer.current = null
+          if (socketRef.current) {
+            socketRef.current.emit("leave_room", { roomId, email });
+            socketRef.current.disconnect();
+            socketRef.current = null; // ← clear ref
+            setConnected(false);
+          }
         }
 
-        if (socketRef.current) {
-          socketRef.current.emit("leave_room", { roomId, email });
-          socketRef.current.disconnect();
-          socketRef.current = null          // ← clear ref
-          setConnected(false);
-        }
-      }
-
-      appState.current = nextState;
-    });
+        appState.current = nextState;
+      },
+    );
     return () => subscription.remove();
   }, [connect, roomId, email]);
 

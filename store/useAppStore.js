@@ -64,11 +64,11 @@ const useAppStore = create((set, get) => ({
       //   console.log("✅ badges parsed:", badges);
       // console.log('✅ colors parsed:', colors)
       //   console.log('✅ packages parsed:', packages)
-        // console.log('✅ rooms parsed:', rooms.packages)
+      // console.log('✅ rooms parsed:', rooms.packages)
 
       const roomList = rooms.documents || [];
       // console.log(roomList);
-      
+
       set({
         badgesFree: badges.free || [], // ← array of URLs
         badgesVip: badges.vip || [], // ← array of URLs
@@ -99,6 +99,12 @@ const useAppStore = create((set, get) => ({
       isLoading: false,
       error: null,
     }),
+  updateRoom: (updatedRoom) =>
+    set((state) => ({
+      rooms: state.rooms.map((room) =>
+        room.roomId === updatedRoom.roomId ? { ...room, ...updatedRoom } : room,
+      ),
+    })),
 }));
 
 export default useAppStore;

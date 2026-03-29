@@ -22,7 +22,7 @@ import useAuthStore from './store/useAuthStore';
 // import 'expo-router/entry';
 import Toast from 'react-native-toast-message';
 import Loader from './src/components/Loader/Loader';
-// SplashScreen.preventAutoHideAsync()
+SplashScreen.preventAutoHideAsync()
 
 export default function App() {
   const isDarkMode = useColorScheme() === 'dark';

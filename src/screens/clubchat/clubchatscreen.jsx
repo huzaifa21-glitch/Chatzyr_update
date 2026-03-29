@@ -14,11 +14,14 @@ import NameColorSheet from "../../components/AppBottomSheet/NameColorSheet";
 import useSocket from '../../../hooks/useSocket'
 import useChatStore from '../../../store/useChatStore'
 import useAuthStore from '../../../store/useAuthStore'
+import useAppStore from "../../../store/useAppStore";
+import { isMod } from "../../utils/userRoles";
 
 export default function ClubChatScreen({ navigation, route }) {
-  const club = route?.params?.room ?? {}
-  const roomId = club?.roomId
 
+  const rooms = useAppStore((state) => state.rooms)
+  const club = rooms.find(r => r.roomId === route?.params?.room?.roomId) ?? route?.params?.room ?? {}
+  const roomId = club?.roomId
   const [sheet, setSheet] = useState(null)
 
   // ── Socket hook ────────────────────────────────
@@ -36,9 +39,14 @@ export default function ClubChatScreen({ navigation, route }) {
   const isConnected = useChatStore((state) => state.isConnected)
   const isConnecting = useChatStore((state) => state.isConnecting)
   const user = useAuthStore((state) => state.user)
+  const mods = useAppStore((state) => state.mods);
+
+  const mod = isMod(user, mods)
+  // console.log(mod);
+
 
   // console.log(onlineUsers);
-  
+
   // ── Keep screen awake ──────────────────────────
   useEffect(() => {
     activateKeepAwakeAsync()
@@ -70,6 +78,7 @@ export default function ClubChatScreen({ navigation, route }) {
         members={onlineUsers.length}        // ← live count from socket
         isConnected={isConnected}
         isConnecting={isConnecting}
+        mod={mod}
       />
 
       <AppBottomSheet
@@ -77,7 +86,7 @@ export default function ClubChatScreen({ navigation, route }) {
         onClose={() => setSheet(null)}
         snapHeight={sheet === "badge" ? 900 * 0.7 : 950 * 0.55}
       >
-        {sheet === "roomInfo" && <RoomInfoSheet room={club} />}
+        {sheet === "roomInfo" && <RoomInfoSheet room={club} mod={mod} />}
         {sheet === "badge" && <BadgeUpdateSheet onSave={(badge) => console.log("Badge updated:", badge)} />}
         {sheet === "nameColor" && <NameColorSheet onSave={(name, color) => console.log("Updated:", name, color)} />}
       </AppBottomSheet>

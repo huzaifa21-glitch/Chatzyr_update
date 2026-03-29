@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import InputBar from "./InputBar";
 import useChatStore from "../../../store/useChatStore";
 import useAppStore from "../../../store/useAppStore";
+import useAuthStore from "../../../store/useAuthStore";
 import { chatGetTag, formatTime } from "../../utils/formatter";
 type ClubChatProps = {
   room?: any;
@@ -79,7 +80,9 @@ const ClubChat: React.FC<ClubChatProps> = ({
   const typingTimer = useRef<any>(null);
   const loadMore = useChatStore((state) => state.loadMore);
   const hasMore = useChatStore((state) => state.hasMore);
+  const addMessage = useChatStore((state) => state.addMessage);
   const mods = useAppStore((state) => state.mods);
+  const user = useAuthStore((state) => state.user);
   const prevLastMessageRef = useRef<any>(null);
 
   // ── Scroll to bottom ONCE when messages first load ───
@@ -123,6 +126,24 @@ const ClubChat: React.FC<ClubChatProps> = ({
   const handleSend = () => {
     const text = inputText.trim();
     if (!text) return;
+
+    // Create optimistic message
+    const optimisticMessage = {
+      user_id: currentUserEmail,
+      username: user?.username || currentUserEmail,
+      content: text,
+      time: new Date().toISOString(),
+      pic: user?.pic,
+      badge: user?.badge,
+      premium: user?.premium,
+      usernamecolor: user?.usernamecolor || "#555",
+      chatcolor: user?.chatcolor || "#333",
+    };
+
+    // Add locally immediately for optimistic UI
+    addMessage(optimisticMessage);
+
+    // Send to server
     onSendMessage(text);
     setInputText("");
     onStopTyping();
@@ -242,7 +263,7 @@ const ClubChat: React.FC<ClubChatProps> = ({
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={(item, index) => `${item.user_id}-${item.time}-${index}`}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
